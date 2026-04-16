@@ -9,6 +9,7 @@ import { ReconciliationCenter } from './components/ReconciliationCenter';
 import { ImportWizard } from './components/ImportWizard';
 import { SetupPanel } from './components/setup/SetupPanel';
 import { Login } from './components/Login';
+import { CashFlowHorizons } from './components/CashFlowHorizons';
 import { LucideGlobe, LucideLock, LucideTrendingUp, LucideNetwork, LucideLogOut } from 'lucide-react';
 
 function App() {
@@ -171,7 +172,7 @@ function App() {
            </div>
 
            {(stats.assets_total > 0 || stats.liabilities_total > 0 || stats.equity_total > 0) && (
-              <div className="glass p-6 rounded-3xl border border-purple-500/30 bg-purple-500/5 col-span-1 md:col-span-3 flex items-center justify-between animate-in zoom-in-95 duration-500">
+              <div className="glass p-6 rounded-3xl border border-purple-500/30 bg-purple-500/5 col-span-1 md:col-span-3 flex items-center justify-between animate-in zoom-in-95 duration-500 flex-wrap gap-4">
                 <div>
                   <div className="flex items-center gap-2 mb-1">
                     <LucideNetwork className="w-4 h-4 text-purple-400" />
@@ -197,6 +198,8 @@ function App() {
                 </div>
               </div>
            )}
+
+           <CashFlowHorizons entries={ledgerEntries} baseCurrency={baseCurrency} />
         </section>
 
         {/* Dashboard Grid */}
@@ -266,9 +269,6 @@ function App() {
                   </button>
                 </div>
               </div>
-              <span className="text-sm font-mono glass px-3 py-1 rounded-full cursor-help" title="Projected balance at the end of the current horizon">
-                Horizon: {ledgerEntries.length > 0 ? (ledgerEntries[ledgerEntries.length - 1] as any).running_balance.toLocaleString('en-US', { style: 'currency', currency: baseCurrency }) : '$0.00'}
-              </span>
             </div>
 
             <div className="relative">
