@@ -1,0 +1,120 @@
+import { useState } from 'react';
+import { LucideLock, LucideUser, LucideWallet } from 'lucide-react';
+import { API_BASE } from '../utils/api';
+
+export function Login({ onLogin }: { onLogin: (token: string) => void }) {
+    const [username, setUsername] = useState('');
+    const [password, setPassword] = useState('');
+    const [error, setError] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+
+    const handleSubmit = async (e: any) => {
+        e.preventDefault();
+        setIsLoading(true);
+        setError('');
+
+        const formData = new FormData();
+        formData.append('username', username);
+        formData.append('password', password);
+
+        try {
+            const res = await fetch(`${API_BASE}/api/auth/login`, {
+                method: 'POST',
+                body: formData,
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                onLogin(data.access_token);
+            } else {
+                setError('Invalid username or password');
+            }
+        } catch (err) {
+            setError('System unavailable. Please try again.');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    return (
+        <div className="min-h-screen bg-[#0a0a0f] text-white flex items-center justify-center p-6 selection:bg-purple-500/30">
+            {/* Background Decorative Elements */}
+            <div className="fixed inset-0 overflow-hidden pointer-events-none">
+                <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-600/10 rounded-full blur-[120px]" />
+                <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-600/10 rounded-full blur-[120px]" />
+            </div>
+
+            <div className="w-full max-w-md animate-in fade-in zoom-in-95 duration-700">
+                <div className="glass p-8 rounded-[40px] border border-white/10 shadow-2xl relative overflow-hidden">
+                    {/* Header */}
+                    <div className="text-center mb-10">
+                        <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-tr from-blue-500 to-purple-600 mb-6 shadow-lg shadow-purple-500/20">
+                            <LucideWallet className="w-8 h-8 text-white" />
+                        </div>
+                        <h1 className="text-3xl font-black bg-clip-text text-transparent bg-gradient-to-r from-white to-white/60">
+                            Continuance
+                        </h1>
+                        <p className="text-slate-500 text-sm mt-2 font-medium tracking-wide">PERPETUAL FORECASTING ENGINE</p>
+                    </div>
+
+                    <form onSubmit={handleSubmit} className="space-y-5">
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500 ml-1">Identity</label>
+                            <div className="relative group">
+                                <LucideUser className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-blue-400 transition-colors" />
+                                <input 
+                                    type="text" 
+                                    value={username}
+                                    onChange={e => setUsername(e.target.value)}
+                                    placeholder="Username"
+                                    className="w-full bg-black/40 border border-white/5 rounded-2xl py-4 pl-12 pr-4 outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all font-medium placeholder:text-slate-600"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500 ml-1">Access Key</label>
+                            <div className="relative group">
+                                <LucideLock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-purple-400 transition-colors" />
+                                <input 
+                                    type="password" 
+                                    value={password}
+                                    onChange={e => setPassword(e.target.value)}
+                                    placeholder="••••••••"
+                                    className="w-full bg-black/40 border border-white/5 rounded-2xl py-4 pl-12 pr-4 outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-all font-medium placeholder:text-slate-600"
+                                />
+                            </div>
+                        </div>
+
+                        {error && (
+                            <div className="bg-red-500/10 border border-red-500/20 text-red-500 text-xs py-3 px-4 rounded-xl animate-in shake-1 duration-300">
+                                {error}
+                            </div>
+                        )}
+
+                        <button 
+                            type="submit" 
+                            disabled={isLoading}
+                            className={`w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold py-4 rounded-2xl shadow-lg shadow-purple-500/20 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:scale-100 flex items-center justify-center gap-2 group`}
+                        >
+                            {isLoading ? (
+                                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                            ) : (
+                                <>
+                                    Enter Dashboard
+                                    <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                                </>
+                            )}
+                        </button>
+
+
+                    </form>
+                </div>
+                
+                <p className="text-center text-slate-700 text-[10px] mt-8 font-bold tracking-[0.3em] uppercase">
+                    &copy; 2026 Continuance Finance
+                </p>
+            </div>
+        </div>
+    );
+}

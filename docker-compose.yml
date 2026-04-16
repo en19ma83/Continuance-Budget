@@ -1,0 +1,49 @@
+version: '3.8'
+services:
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-budget_user}
+      POSTGRES_DB: ${POSTGRES_DB:-budget_app}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-budget_password}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  pgadmin:
+    image: dpage/pgadmin4
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    depends_on:
+      - db
+
+  backend:
+    build: ./backend
+    depends_on:
+      - db
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-budget_user}:${POSTGRES_PASSWORD:-budget_password}@db:5432/${POSTGRES_DB:-budget_app}
+      - SECRET_KEY=${SECRET_KEY}
+      - INITIAL_ADMIN_USER=${INITIAL_ADMIN_USER:-admin}
+      - INITIAL_ADMIN_PASS=${INITIAL_ADMIN_PASS:-admin}
+      - CURRENCY_API_KEY=${CURRENCY_API_KEY}
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:80"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    stdin_open: true
+
+volumes:
+  pgdata:
