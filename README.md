@@ -185,4 +185,22 @@ Continuance-Budget/
 
 ---
 
+## Roadmap
+
+This is the **Community Edition** — free, open source, and self-hosted forever.
+
+Two additional tiers are in planning:
+
+### Mobile Edition
+A free companion app (iOS + Android) built with Expo / React Native, pointing to your own self-hosted Community backend. Includes the dashboard, perpetual ledger, cash flow horizons, and a quick-add transaction flow. Statement import is desktop-only and excluded from mobile.
+
+### Pro Edition *(paid SaaS)*
+An AI-first managed version with:
+- **Google Vertex AI (Gemini 2.5 Flash)** — automatic transaction categorisation, natural language financial Q&A, anomaly detection, and monthly cash flow narratives
+- **Open Banking / CDR feed** — live bank transaction feeds via an accredited aggregator (no manual CSV import required)
+- **Linked mobile app** — full feature set including AI Insights tab, connected to the managed Pro backend
+- **Multi-seat plans** — Personal, Family, and Business tiers with Stripe billing
+
+---
+
 *Built with [Claude Code](https://claude.ai/code) by Anthropic.*
