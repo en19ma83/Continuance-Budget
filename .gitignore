@@ -37,3 +37,6 @@ pgdata/
 backend/alembic/__pycache__/
 frontend/node_modules/
 frontend/dist/
+
+# Future build planning (local only — not published)
+future-build/
