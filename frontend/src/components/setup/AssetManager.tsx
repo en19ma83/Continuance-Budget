@@ -183,8 +183,23 @@ export function AssetManager({ onRefresh, baseCurrency = 'AUD', token }: { onRef
   const loanAssets = assets.filter(a => a.type === 'LOAN' || a.is_liability);
   const fmt = (v: number) => v.toLocaleString('en-AU', { style: 'currency', currency: baseCurrency, maximumFractionDigits: 0 });
 
+  // Build linked pairs for visual grouping
+  const pairedIds = new Set<string>();
+  const linkedPairs: { asset: Asset; loan: Asset }[] = [];
+  assets.forEach(a => {
+    if (a.linked_loan_id) {
+      const loan = assets.find(l => l.id === a.linked_loan_id);
+      if (loan) {
+        linkedPairs.push({ asset: a, loan });
+        pairedIds.add(a.id);
+        pairedIds.add(loan.id);
+      }
+    }
+  });
+  const standaloneAssets = assets.filter(a => !pairedIds.has(a.id));
+
   return (
-    <div className="space-y-6 pt-6 border-t border-white/10">
+    <div className="space-y-6 pt-6 border-t border-white/10 dark:border-white/10">
       <div className="flex items-center justify-between mb-4">
         <div>
           <h3 className="text-lg font-bold">Assets &amp; Liabilities</h3>
@@ -299,75 +314,110 @@ export function AssetManager({ onRefresh, baseCurrency = 'AUD', token }: { onRef
       )}
 
       <div className="grid grid-cols-1 gap-3">
-        {assets.map(asset => {
-          const hasEquity = asset.equity !== undefined && asset.equity !== null;
-          return (
-            <div key={asset.id} className={`p-4 rounded-xl border glass flex flex-col gap-2 ${hasEquity ? 'border-green-500/30' : 'border-white/10'}`}>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className={`p-2 rounded-lg ${asset.is_liability ? 'bg-red-500/20 text-red-400' : hasEquity ? 'bg-green-500/20 text-green-400' : 'bg-purple-500/20 text-purple-400'}`}>
-                    {asset.is_liability ? <LucideTrendingDown className="w-5 h-5" /> : <LucideBaggageClaim className="w-5 h-5" />}
-                  </div>
-                  <div>
-                    <div className="font-semibold text-sm flex items-center gap-2">
-                      {asset.name}
-                      {asset.ticker && <span className="text-[9px] bg-white/10 px-1 rounded uppercase">{asset.ticker}</span>}
-                      {hasEquity && <span className="text-[9px] bg-green-500/20 text-green-400 px-1.5 py-0.5 rounded-full">Equity Tracked</span>}
-                    </div>
-                    <div className="text-[10px] text-slate-500 uppercase tracking-wider">
-                      {asset.type} • {asset.entity}
-                      {asset.interest_rate && ` • ${asset.interest_rate}% APR`}
-                    </div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="text-right">
-                    <div className={`font-bold text-sm ${asset.is_liability ? 'text-red-400' : 'text-purple-400'}`}>
-                      {asset.is_liability ? '-' : ''}{fmt(asset.current_value)}
-                    </div>
-                    <button onClick={() => updateValue(asset.id, asset.current_value)}
-                      className="text-[9px] text-slate-500 hover:text-white transition-colors flex items-center gap-1 ml-auto">
-                      <LucideHistory className="w-2 h-2" /> Update Value
-                    </button>
-                  </div>
-                  <div className="flex flex-col gap-1 ml-2">
-                    <button onClick={() => startEdit(asset)} className="p-1.5 text-slate-500 hover:text-white hover:bg-white/10 rounded transition-colors">
-                      <Edit3 className="w-3 h-3" />
-                    </button>
-                    <button onClick={() => handleDelete(asset.id)} className="p-1.5 text-slate-500 hover:text-red-500 hover:bg-red-500/10 rounded transition-colors">
-                      <Trash2 className="w-3 h-3" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Equity & LVR strip */}
-              {hasEquity && (
-                <div className="grid grid-cols-3 gap-2 mt-1 pt-2 border-t border-white/5">
-                  <div className="text-center">
-                    <div className="text-[9px] text-slate-500 uppercase tracking-wider mb-0.5">Market Value</div>
-                    <div className="text-xs font-bold text-slate-200">{fmt(asset.current_value)}</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-[9px] text-slate-500 uppercase tracking-wider mb-0.5">Equity</div>
-                    <div className={`text-xs font-bold ${asset.equity! >= 0 ? 'text-green-400' : 'text-red-400'}`}>{fmt(asset.equity!)}</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-[9px] text-slate-500 uppercase tracking-wider mb-0.5">LVR</div>
-                    <div className={`text-xs font-bold ${(asset.lvr || 0) > 80 ? 'text-red-400' : (asset.lvr || 0) > 60 ? 'text-amber-400' : 'text-green-400'}`}>
-                      {asset.lvr?.toFixed(1)}%
-                      <span className="text-[8px] text-slate-500 ml-1 font-normal">{(asset.lvr || 0) > 80 ? 'High Risk' : (asset.lvr || 0) > 60 ? 'Moderate' : 'Safe'}</span>
-                    </div>
-                  </div>
-                </div>
-              )}
+        {/* Linked asset+loan pairs */}
+        {linkedPairs.map(({ asset, loan }) => (
+          <div key={asset.id} className="relative rounded-2xl border border-green-500/30 bg-green-500/5 p-1 space-y-1">
+            {/* Connector label */}
+            <div className="absolute -top-2.5 left-4 flex items-center gap-1 bg-green-900/80 dark:bg-green-900/80 px-2 py-0.5 rounded-full border border-green-500/40 z-10">
+              <LucideLink className="w-2.5 h-2.5 text-green-400" />
+              <span className="text-[9px] font-bold uppercase tracking-widest text-green-400">Linked</span>
             </div>
-          );
+            {/* Left bracket line */}
+            <div className="absolute left-2.5 top-6 bottom-6 w-0.5 rounded-full bg-green-500/30" />
+            <div className="pl-2">
+              {[asset, loan].map(a => {
+                const hasEquity = a.equity !== undefined && a.equity !== null;
+                return (
+                  <AssetCard key={a.id} asset={a} hasEquity={hasEquity} fmt={fmt} onEdit={startEdit} onDelete={handleDelete} onUpdateValue={updateValue} />
+                );
+              })}
+            </div>
+          </div>
+        ))}
+
+        {/* Standalone assets */}
+        {standaloneAssets.map(asset => {
+          const hasEquity = asset.equity !== undefined && asset.equity !== null;
+          return <AssetCard key={asset.id} asset={asset} hasEquity={hasEquity} fmt={fmt} onEdit={startEdit} onDelete={handleDelete} onUpdateValue={updateValue} />;
         })}
+
         {assets.length === 0 && (
           <div className="text-center py-4 text-slate-500 text-[11px] italic">No assets or liabilities tracked.</div>
         )}
       </div>
+    </div>
+  );
+}
+
+function AssetCard({ asset, hasEquity, fmt, onEdit, onDelete, onUpdateValue }: {
+  asset: Asset;
+  hasEquity: boolean;
+  fmt: (v: number) => string;
+  onEdit: (a: Asset) => void;
+  onDelete: (id: string) => void;
+  onUpdateValue: (id: string, val: number) => void;
+}) {
+  return (
+    <div className={`p-4 rounded-xl border glass flex flex-col gap-2 ${hasEquity ? 'border-green-500/20' : asset.is_liability ? 'border-red-500/20' : 'border-white/10'}`}>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className={`p-2 rounded-lg ${asset.is_liability ? 'bg-red-500/20 text-red-400' : hasEquity ? 'bg-green-500/20 text-green-400' : 'bg-purple-500/20 text-purple-400'}`}>
+            {asset.is_liability ? <LucideTrendingDown className="w-5 h-5" /> : <LucideBaggageClaim className="w-5 h-5" />}
+          </div>
+          <div>
+            <div className="font-semibold text-sm flex items-center gap-2">
+              {asset.name}
+              {asset.ticker && <span className="text-[9px] bg-white/10 px-1 rounded uppercase">{asset.ticker}</span>}
+              {hasEquity && <span className="text-[9px] bg-green-500/20 text-green-400 px-1.5 py-0.5 rounded-full">Equity Tracked</span>}
+            </div>
+            <div className="text-[10px] text-slate-500 uppercase tracking-wider">
+              {asset.type} • {asset.entity}
+              {asset.interest_rate && ` • ${asset.interest_rate}% APR`}
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="text-right">
+            <div className={`font-bold text-sm ${asset.is_liability ? 'text-red-400' : 'text-purple-400'}`}>
+              {asset.is_liability ? '-' : ''}{fmt(asset.current_value)}
+            </div>
+            <button
+              onClick={() => onUpdateValue(asset.id, asset.current_value)}
+              className="text-[9px] text-slate-500 hover:text-white transition-colors flex items-center gap-1 ml-auto"
+            >
+              <LucideHistory className="w-2 h-2" /> Update Value
+            </button>
+          </div>
+          <div className="flex flex-col gap-1 ml-2">
+            <button onClick={() => onEdit(asset)} className="p-1.5 text-slate-500 hover:text-white hover:bg-white/10 rounded transition-colors">
+              <Edit3 className="w-3 h-3" />
+            </button>
+            <button onClick={() => onDelete(asset.id)} className="p-1.5 text-slate-500 hover:text-red-500 hover:bg-red-500/10 rounded transition-colors">
+              <Trash2 className="w-3 h-3" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {hasEquity && (
+        <div className="grid grid-cols-3 gap-2 mt-1 pt-2 border-t border-white/5">
+          <div className="text-center">
+            <div className="text-[9px] text-slate-500 uppercase tracking-wider mb-0.5">Market Value</div>
+            <div className="text-xs font-bold">{fmt(asset.current_value)}</div>
+          </div>
+          <div className="text-center">
+            <div className="text-[9px] text-slate-500 uppercase tracking-wider mb-0.5">Equity</div>
+            <div className={`text-xs font-bold ${asset.equity! >= 0 ? 'text-green-400' : 'text-red-400'}`}>{fmt(asset.equity!)}</div>
+          </div>
+          <div className="text-center">
+            <div className="text-[9px] text-slate-500 uppercase tracking-wider mb-0.5">LVR</div>
+            <div className={`text-xs font-bold ${(asset.lvr || 0) > 80 ? 'text-red-400' : (asset.lvr || 0) > 60 ? 'text-amber-400' : 'text-green-400'}`}>
+              {asset.lvr?.toFixed(1)}%
+              <span className="text-[8px] text-slate-500 ml-1 font-normal">{(asset.lvr || 0) > 80 ? 'High Risk' : (asset.lvr || 0) > 60 ? 'Moderate' : 'Safe'}</span>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

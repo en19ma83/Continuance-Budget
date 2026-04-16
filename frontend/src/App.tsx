@@ -73,7 +73,7 @@ function App() {
   }
 
   return (
-    <div className={`min-h-screen transition-colors duration-300 ${theme === 'dark' ? 'bg-zinc-950 text-white' : 'bg-slate-50 text-slate-900'} font-sans relative`}>
+    <div className={`min-h-screen transition-colors duration-300 ${theme === 'dark' ? 'bg-[#1e1e1e] text-[#cccccc]' : 'bg-[#f3f3f3] text-[#333333]'} font-sans relative`}>
       {/* Background Gradient Orbs */}
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
         <div className="absolute top-[-10%] left-[-10%] w-96 h-96 rounded-full bg-blue-500/20 blur-3xl mix-blend-multiply opacity-70"></div>
@@ -81,7 +81,7 @@ function App() {
       </div>
 
       {isLoading && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center bg-zinc-950">
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-[#1e1e1e]">
           <div className="text-center space-y-4">
             <div className="w-12 h-12 rounded-full border-2 border-blue-500 border-t-transparent animate-spin mx-auto" />
             <div className="text-sm text-slate-500 font-medium tracking-widest uppercase">Loading Continuance...</div>

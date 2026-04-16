@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { API_BASE } from '../utils/api';
 import { useEntity } from '../contexts/EntityContext';
+import { LucideCalendar } from 'lucide-react';
 
 type CategoryType = { id: string, name: string, color: string };
 type CategoryGroupType = { id: string, name: string, type: string, categories: CategoryType[] };
@@ -204,7 +205,16 @@ export function RuleForm({ onComplete, token }: { onComplete?: () => void, token
 
       <div>
         <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1 block">Anchor Date</label>
-        <input required type="date" value={anchorDate} onChange={e => setAnchorDate(e.target.value)} className="w-full bg-black/5 border border-white/10 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none" />
+        <div className="relative">
+          <LucideCalendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none z-10" />
+          <input
+            required
+            type="date"
+            value={anchorDate}
+            onChange={e => setAnchorDate(e.target.value)}
+            className="w-full bg-white/10 dark:bg-white/5 border border-white/20 dark:border-white/10 rounded-lg px-4 py-2 pl-10 focus:ring-2 focus:ring-blue-500 outline-none text-slate-900 dark:text-slate-100 dark:[color-scheme:dark] [color-scheme:light]"
+          />
+        </div>
       </div>
 
       <div className="flex items-center gap-2 pt-2">
