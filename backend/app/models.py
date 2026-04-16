@@ -58,6 +58,7 @@ class Asset(Base):
     __tablename__ = "assets"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True, index=True)
     name = Column(String, nullable=False)
     type = Column(Enum(AssetType), nullable=False)
     entity = Column(Enum(EntityType), nullable=False)
@@ -88,6 +89,7 @@ class Account(Base):
     __tablename__ = "accounts"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True, index=True)
     name = Column(String, nullable=False)
     type = Column(String, nullable=True) # e.g. "Checking", "Savings"
     entity = Column(Enum(EntityType), nullable=False)
@@ -103,6 +105,7 @@ class RecurringRule(Base):
     __tablename__ = "recurring_rules"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True, index=True)
     entity = Column(Enum(EntityType), nullable=False)
     name = Column(String, index=True, nullable=False)
     amount = Column(Float, nullable=False)  # Negative for expense, positive for income
@@ -126,6 +129,7 @@ class LedgerEntry(Base):
     __tablename__ = "ledger_entries"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True, index=True)
     date = Column(Date, nullable=False, index=True)
     name = Column(String, index=True, nullable=True) # Descriptive event name
     amount = Column(Float, nullable=False)
@@ -147,6 +151,7 @@ class StatementTransaction(Base):
     __tablename__ = "statement_transactions"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True, index=True)
     date = Column(Date, nullable=False)
     amount = Column(Float, nullable=False)
     description = Column(String, nullable=False)
@@ -175,5 +180,6 @@ class User(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     username = Column(String, unique=True, index=True, nullable=False)
+    email = Column(String, unique=True, index=True, nullable=True)
     hashed_password = Column(String, nullable=False)
     is_active = Column(Boolean, default=True)
