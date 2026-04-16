@@ -81,7 +81,9 @@ export function ImportWizard({
     const [totalRows, setTotalRows] = useState(0);
 
     // Account / entity
-    const [entity, setEntity] = useState(Array.from(activeEntities)[0] || 'PERSONAL');
+    const [entity, setEntity] = useState<'PERSONAL' | 'BUSINESS'>(
+        (Array.from(activeEntities)[0] as 'PERSONAL' | 'BUSINESS') || 'PERSONAL'
+    );
     const [accounts, setAccounts] = useState<any[]>([]);
     const [accountId, setAccountId] = useState('');
 
@@ -284,7 +286,7 @@ export function ImportWizard({
                             <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1 block">Entity</label>
                             <select
                                 value={entity}
-                                onChange={e => setEntity(e.target.value)}
+                                onChange={e => setEntity(e.target.value as 'PERSONAL' | 'BUSINESS')}
                                 className="w-full bg-white dark:bg-[#2d2d30] border border-gray-200 dark:border-[#3c3c3c] rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-[#cccccc] outline-none focus:ring-1 focus:ring-blue-500"
                             >
                                 <option value="PERSONAL">Personal</option>
