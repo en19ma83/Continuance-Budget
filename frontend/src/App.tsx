@@ -42,8 +42,8 @@ function App() {
     fetch(`${API_BASE}/api/v2/stats?${params.toString()}`, {
         headers: { 'Authorization': `Bearer ${token}` }
     })
-        .then(res => res.json())
-        .then(data => { setStats(data); setIsLoading(false); })
+        .then(res => { if (res.status === 401) { handleLogout(); return null; } return res.json(); })
+        .then(data => { if (data) { setStats(data); setIsLoading(false); } })
         .catch(() => setIsLoading(false));
   };
 
@@ -57,8 +57,8 @@ function App() {
     fetch(`${API_BASE}/api/ledger?${params.toString()}`, {
         headers: { 'Authorization': `Bearer ${token}` }
     })
-        .then(res => res.json())
-        .then(data => setLedgerEntries(data))
+        .then(res => { if (res.status === 401) { handleLogout(); return null; } return res.json(); })
+        .then(data => { if (data) setLedgerEntries(data); })
         .catch(console.error);
   };
 

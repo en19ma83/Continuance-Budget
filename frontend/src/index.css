@@ -99,4 +99,9 @@
     background-color: #2d2d30;
     color: #cccccc;
   }
+  .dark select optgroup {
+    background-color: #252526;
+    color: #858585;
+    font-style: normal;
+  }
 }
