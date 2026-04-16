@@ -273,7 +273,7 @@ function App() {
 
             <div className="relative">
               {viewMode === 'timeline' ? (
-                <TimelineView entries={ledgerEntries} baseCurrency={baseCurrency} />
+                <TimelineView entries={ledgerEntries} baseCurrency={baseCurrency} token={token} onRefresh={fetchLedger} />
               ) : (
                 <CalendarView entries={ledgerEntries} baseCurrency={baseCurrency} />
               )}
