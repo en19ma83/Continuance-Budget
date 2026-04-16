@@ -81,3 +81,22 @@
 .glass {
   @apply bg-white/70 dark:bg-[#2d2d30]/80 backdrop-blur-md border border-[#e0e0e0] dark:border-[#3c3c3c] shadow-sm;
 }
+
+/* Native select/input dark mode — browser resets the bg to white by default */
+@layer base {
+  .dark select,
+  .dark input[type="date"],
+  .dark input[type="number"],
+  .dark input[type="text"],
+  .dark input[type="email"],
+  .dark input[type="password"] {
+    color-scheme: dark;
+    background-color: #3c3c3c;
+    color: #cccccc;
+    border-color: #555555;
+  }
+  .dark select option {
+    background-color: #2d2d30;
+    color: #cccccc;
+  }
+}

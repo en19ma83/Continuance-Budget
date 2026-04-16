@@ -140,7 +140,7 @@ function App() {
 
         {/* Liquidity Overview Section */}
         <section className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12 animate-in fade-in slide-in-from-top-4 duration-700">
-           <div className="glass p-6 rounded-3xl border border-white/10 relative overflow-hidden group">
+           <div className="glass p-6 rounded-3xl border border-gray-200 dark:border-white/10 relative overflow-hidden group">
               <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
                 <LucideGlobe className="w-24 h-24" />
               </div>
@@ -152,7 +152,7 @@ function App() {
               </div>
            </div>
 
-           <div className="glass p-6 rounded-3xl border border-white/10 flex flex-col justify-center">
+           <div className="glass p-6 rounded-3xl border border-gray-200 dark:border-white/10 flex flex-col justify-center">
               <div className="flex items-center gap-3 mb-1">
                 <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
                 <div className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Spendable Budget (On-Budget)</div>
@@ -161,7 +161,7 @@ function App() {
               <div className="text-[10px] text-slate-500 mt-1 italic">Liquid cash currently assigned to forcasting rules.</div>
            </div>
 
-           <div className="glass p-6 rounded-3xl border border-white/10 flex flex-col justify-center">
+           <div className="glass p-6 rounded-3xl border border-gray-200 dark:border-white/10 flex flex-col justify-center">
               <div className="flex items-center gap-3 mb-1">
                 <LucideLock className="w-3 h-3 text-amber-500" />
                 <div className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Withheld Assets (Off-Budget)</div>
@@ -177,12 +177,12 @@ function App() {
                     <LucideNetwork className="w-4 h-4 text-purple-400" />
                     <div className="text-xs font-bold uppercase tracking-widest text-purple-400">Net Worth Analysis</div>
                   </div>
-                  <div className="text-4xl font-black text-white">{stats.net_worth.toLocaleString('en-US', { style: 'currency', currency: baseCurrency })}</div>
+                  <div className="text-4xl font-black text-gray-900 dark:text-white">{stats.net_worth.toLocaleString('en-US', { style: 'currency', currency: baseCurrency })}</div>
                 </div>
                 <div className="flex gap-8 text-right pr-4">
                    <div>
                       <div className="text-[10px] text-slate-500 uppercase font-bold">Liquid &amp; Gross Assets</div>
-                      <div className="text-lg font-bold text-slate-300">{(stats.total + stats.assets_total).toLocaleString('en-US', { style: 'currency', currency: baseCurrency })}</div>
+                      <div className="text-lg font-bold text-gray-700 dark:text-slate-300">{(stats.total + stats.assets_total).toLocaleString('en-US', { style: 'currency', currency: baseCurrency })}</div>
                    </div>
                    {stats.equity_total > 0 && (
                    <div>
@@ -204,22 +204,22 @@ function App() {
           
           <div className="space-y-8">
             <div className="glass rounded-2xl p-6">
-              <div className="flex rounded-lg overflow-hidden border border-white/10 mb-6 p-1 bg-black/20">
-                <button 
+              <div className="flex rounded-lg overflow-hidden border border-gray-200 dark:border-white/10 mb-6 p-1 bg-gray-100 dark:bg-black/20">
+                <button
                   onClick={() => setLeftTab('rules')}
-                  className={`flex-1 py-2 text-xs font-bold uppercase tracking-wider transition-all ${leftTab === 'rules' ? 'bg-white/10 text-white shadow-sm' : 'text-slate-500 hover:text-slate-300'}`}
+                  className={`flex-1 py-2 text-xs font-bold uppercase tracking-wider transition-all rounded-md ${leftTab === 'rules' ? 'bg-white dark:bg-white/10 text-gray-900 dark:text-white shadow-sm' : 'text-slate-500 hover:text-gray-700 dark:hover:text-slate-300'}`}
                 >
                   Rules
                 </button>
-                <button 
+                <button
                   onClick={() => setLeftTab('reconcile')}
-                  className={`flex-1 py-2 text-xs font-bold uppercase tracking-wider transition-all ${leftTab === 'reconcile' ? 'bg-white/10 text-white shadow-sm' : 'text-slate-500 hover:text-slate-300'}`}
+                  className={`flex-1 py-2 text-xs font-bold uppercase tracking-wider transition-all rounded-md ${leftTab === 'reconcile' ? 'bg-white dark:bg-white/10 text-gray-900 dark:text-white shadow-sm' : 'text-slate-500 hover:text-gray-700 dark:hover:text-slate-300'}`}
                 >
                   Reconcile
                 </button>
-                <button 
+                <button
                   onClick={() => setLeftTab('setup')}
-                  className={`flex-1 py-2 text-xs font-bold uppercase tracking-wider transition-all ${leftTab === 'setup' ? 'bg-white/10 text-white shadow-sm' : 'text-slate-500 hover:text-slate-300'}`}
+                  className={`flex-1 py-2 text-xs font-bold uppercase tracking-wider transition-all rounded-md ${leftTab === 'setup' ? 'bg-white dark:bg-white/10 text-gray-900 dark:text-white shadow-sm' : 'text-slate-500 hover:text-gray-700 dark:hover:text-slate-300'}`}
                 >
                   Setup
                 </button>
@@ -252,15 +252,15 @@ function App() {
               <div className="flex items-center gap-4">
                 <h2 className="text-xl font-semibold">Perpetual Ledger</h2>
                 <div className="glass ml-4 flex rounded-full overflow-hidden p-1">
-                  <button 
+                  <button
                     onClick={() => setViewMode('timeline')}
-                    className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition-colors ${viewMode === 'timeline' ? 'bg-white/10 text-white shadow' : 'text-slate-500 hover:text-slate-300'}`}
+                    className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition-colors ${viewMode === 'timeline' ? 'bg-white dark:bg-white/10 text-gray-900 dark:text-white shadow' : 'text-slate-500 hover:text-gray-700 dark:hover:text-slate-300'}`}
                   >
                     Timeline
                   </button>
-                  <button 
+                  <button
                     onClick={() => setViewMode('calendar')}
-                    className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition-colors ${viewMode === 'calendar' ? 'bg-white/10 text-white shadow' : 'text-slate-500 hover:text-slate-300'}`}
+                    className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition-colors ${viewMode === 'calendar' ? 'bg-white dark:bg-white/10 text-gray-900 dark:text-white shadow' : 'text-slate-500 hover:text-gray-700 dark:hover:text-slate-300'}`}
                   >
                     Calendar
                   </button>

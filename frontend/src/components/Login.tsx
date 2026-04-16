@@ -85,14 +85,14 @@ export function Login({ onLogin }: { onLogin: (token: string) => void }) {
     };
 
     return (
-        <div className="min-h-screen bg-[#0a0a0f] text-white flex items-center justify-center p-6 selection:bg-purple-500/30">
+        <div className="min-h-screen bg-gray-100 dark:bg-[#0a0a0f] text-gray-900 dark:text-white flex items-center justify-center p-6 selection:bg-purple-500/30">
             <div className="fixed inset-0 overflow-hidden pointer-events-none">
                 <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-600/10 rounded-full blur-[120px]" />
                 <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-600/10 rounded-full blur-[120px]" />
             </div>
 
             <div className="w-full max-w-md animate-in fade-in zoom-in-95 duration-700">
-                <div className="glass p-8 rounded-[40px] border border-white/10 shadow-2xl relative overflow-hidden">
+                <div className="glass p-8 rounded-[40px] border border-gray-200 dark:border-white/10 shadow-2xl relative overflow-hidden">
                     {/* Header */}
                     <div className="text-center mb-8">
                         <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-tr from-blue-500 to-purple-600 mb-6 shadow-lg shadow-purple-500/20">
@@ -105,7 +105,7 @@ export function Login({ onLogin }: { onLogin: (token: string) => void }) {
                     </div>
 
                     {/* Mode tabs */}
-                    <div className="flex bg-black/30 rounded-2xl p-1 mb-6">
+                    <div className="flex bg-gray-200 dark:bg-black/30 rounded-2xl p-1 mb-6">
                         {(['login', 'register'] as Mode[]).map(m => (
                             <button
                                 key={m}
@@ -152,7 +152,7 @@ export function Login({ onLogin }: { onLogin: (token: string) => void }) {
                                         onChange={e => setUsername(e.target.value)}
                                         placeholder="Username"
                                         required
-                                        className="w-full bg-black/40 border border-white/5 rounded-2xl py-4 pl-12 pr-4 outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all font-medium placeholder:text-slate-600"
+                                        className="w-full bg-white dark:bg-black/40 border border-gray-200 dark:border-white/5 rounded-2xl py-4 pl-12 pr-4 outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all font-medium placeholder:text-slate-400 dark:placeholder:text-slate-600 text-gray-900 dark:text-white"
                                     />
                                 </div>
                             </div>
@@ -170,7 +170,7 @@ export function Login({ onLogin }: { onLogin: (token: string) => void }) {
                                             value={email}
                                             onChange={e => setEmail(e.target.value)}
                                             placeholder="you@example.com"
-                                            className="w-full bg-black/40 border border-white/5 rounded-2xl py-4 pl-12 pr-4 outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all font-medium placeholder:text-slate-600"
+                                            className="w-full bg-white dark:bg-black/40 border border-gray-200 dark:border-white/5 rounded-2xl py-4 pl-12 pr-4 outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all font-medium placeholder:text-slate-400 dark:placeholder:text-slate-600 text-gray-900 dark:text-white"
                                         />
                                     </div>
                                 </div>
@@ -196,7 +196,7 @@ export function Login({ onLogin }: { onLogin: (token: string) => void }) {
 
                             {/* Password rules (register only) */}
                             {showPasswordRules && (
-                                <div className="bg-black/30 rounded-2xl p-4 space-y-1.5">
+                                <div className="bg-gray-100 dark:bg-black/30 rounded-2xl p-4 space-y-1.5">
                                     {PASSWORD_RULES.map(rule => {
                                         const ok = rule.test(password);
                                         return (
@@ -213,7 +213,7 @@ export function Login({ onLogin }: { onLogin: (token: string) => void }) {
                             )}
 
                             {error && (
-                                <div className="bg-red-500/10 border border-red-500/20 text-red-400 text-xs py-3 px-4 rounded-xl">
+                                <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 text-red-600 dark:text-red-400 text-xs py-3 px-4 rounded-xl">
                                     {error}
                                 </div>
                             )}

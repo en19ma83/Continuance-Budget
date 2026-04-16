@@ -226,7 +226,7 @@ export function AssetManager({ onRefresh, baseCurrency = 'AUD', token }: { onRef
         <div className="glass p-4 rounded-xl border border-purple-500/30 space-y-3 animate-in fade-in slide-in-from-top-2">
           <div className="text-[10px] font-bold uppercase tracking-widest text-purple-400 mb-1">{editingId ? 'Editing Asset' : 'Add New Asset'}</div>
           <input placeholder="Asset Name (e.g. Primary Residence)" value={newName} onChange={e => setNewName(e.target.value)}
-            className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm" />
+            className="w-full bg-white dark:bg-black/20 border border-gray-200 dark:border-white/10 rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-gray-100" />
           <div className="grid grid-cols-2 gap-2">
             <select value={newType} onChange={e => setNewType(e.target.value)} className="bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm">
               <option value="PROPERTY">Property</option>
@@ -245,20 +245,20 @@ export function AssetManager({ onRefresh, baseCurrency = 'AUD', token }: { onRef
             <div>
               <label className="text-[10px] text-slate-500 block mb-1">Current Market Value</label>
               <input type="number" value={newValue} onChange={e => setNewValue(e.target.value)}
-                className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm" />
+                className="w-full bg-white dark:bg-black/20 border border-gray-200 dark:border-white/10 rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-gray-100" />
             </div>
             {newType === 'LOAN' && (
               <div>
                 <label className="text-[10px] text-slate-500 block mb-1">Interest Rate (%)</label>
                 <input type="number" step="0.01" value={interestRate} onChange={e => setInterestRate(e.target.value)}
-                  className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm" placeholder="e.g. 5.5" />
+                  className="w-full bg-white dark:bg-black/20 border border-gray-200 dark:border-white/10 rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-gray-100" placeholder="e.g. 5.5" />
               </div>
             )}
             {newType === 'STOCK' && (
               <div>
                 <label className="text-[10px] text-slate-500 block mb-1">Ticker Symbol</label>
                 <input value={ticker} onChange={e => setTicker(e.target.value)}
-                  className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm" placeholder="e.g. TSLA" />
+                  className="w-full bg-white dark:bg-black/20 border border-gray-200 dark:border-white/10 rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-gray-100" placeholder="e.g. TSLA" />
               </div>
             )}
           </div>
@@ -276,12 +276,12 @@ export function AssetManager({ onRefresh, baseCurrency = 'AUD', token }: { onRef
                   <div>
                     <label className="text-[10px] text-slate-500 block mb-1">Loan Principal Balance</label>
                     <input type="number" value={loanBalance} onChange={e => setLoanBalance(e.target.value)}
-                      className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-1.5 text-xs" />
+                      className="w-full bg-white dark:bg-black/20 border border-gray-200 dark:border-white/10 rounded-lg px-3 py-1.5 text-xs text-gray-900 dark:text-gray-100" />
                   </div>
                   <div>
                     <label className="text-[10px] text-slate-500 block mb-1">Interest Rate (%)</label>
                     <input type="number" step="0.01" value={loanRate} onChange={e => setLoanRate(e.target.value)}
-                      className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-1.5 text-xs" placeholder="e.g. 6.2" />
+                      className="w-full bg-white dark:bg-black/20 border border-gray-200 dark:border-white/10 rounded-lg px-3 py-1.5 text-xs text-gray-900 dark:text-gray-100" placeholder="e.g. 6.2" />
                   </div>
                 </div>
               )}
@@ -295,7 +295,7 @@ export function AssetManager({ onRefresh, baseCurrency = 'AUD', token }: { onRef
                 <LucideLink className="w-3 h-3" /> Link to Existing Mortgage/Loan
               </label>
               <select value={linkedLoanId} onChange={e => setLinkedLoanId(e.target.value)}
-                className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm">
+                className="w-full bg-white dark:bg-black/20 border border-gray-200 dark:border-white/10 rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-gray-100">
                 <option value="">No linked loan</option>
                 {loanAssets.map(l => <option key={l.id} value={l.id}>{l.name} (${l.current_value.toLocaleString()})</option>)}
               </select>

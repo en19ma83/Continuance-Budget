@@ -104,14 +104,14 @@ export function RuleForm({ onComplete, token }: { onComplete?: () => void, token
       <div className="grid grid-cols-2 gap-2">
         <div>
             <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1 block">Context</label>
-            <select value={entity} onChange={e => setEntity(e.target.value as any)} className="w-full bg-black/5 border border-white/10 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none">
+            <select value={entity} onChange={e => setEntity(e.target.value as any)} className="w-full bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-gray-100">
             <option value="PERSONAL">Personal</option>
             <option value="BUSINESS">Business</option>
             </select>
         </div>
         <div>
             <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1 block">Category</label>
-            <select value={categoryId} onChange={e => setCategoryId(e.target.value)} className="w-full bg-black/5 border border-white/10 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none">
+            <select value={categoryId} onChange={e => setCategoryId(e.target.value)} className="w-full bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-gray-100">
                <option value="">None</option>
                {categoryGroups.map(grp => (
                    <optgroup key={grp.id} label={`${grp.name} (${grp.type})`}>
@@ -124,7 +124,7 @@ export function RuleForm({ onComplete, token }: { onComplete?: () => void, token
         </div>
         <div>
             <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1 block">Account</label>
-            <select value={accountId} onChange={e => setAccountId(e.target.value)} className="w-full bg-black/5 border border-white/10 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none">
+            <select value={accountId} onChange={e => setAccountId(e.target.value)} className="w-full bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-gray-100">
                <option value="">Select Account...</option>
                {accounts.map(acc => (
                    <option key={acc.id} value={acc.id}>{acc.name} ({acc.type})</option>
@@ -133,7 +133,7 @@ export function RuleForm({ onComplete, token }: { onComplete?: () => void, token
         </div>
         <div>
             <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1 block">Link to Asset/Loan</label>
-            <select value={assetId} onChange={e => setAssetId(e.target.value)} className="w-full bg-black/5 border border-white/10 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none">
+            <select value={assetId} onChange={e => setAssetId(e.target.value)} className="w-full bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-gray-100">
                <option value="">None (Standalone)</option>
                {assets.map(a => (
                    <option key={a.id} value={a.id}>{a.name} ({a.type})</option>
@@ -153,14 +153,14 @@ export function RuleForm({ onComplete, token }: { onComplete?: () => void, token
         </div>
       )}
 
-      <div className="flex items-center gap-4 bg-white/5 p-3 rounded-lg border border-white/5">
+      <div className="flex items-center gap-4 bg-gray-50 dark:bg-white/5 p-3 rounded-lg border border-gray-200 dark:border-white/5">
          <div className="flex items-center gap-2">
             <input type="checkbox" id="is_transfer" checked={isTransfer} onChange={e => setIsTransfer(e.target.checked)} />
             <label htmlFor="is_transfer" className="text-sm font-semibold">Is Transfer?</label>
          </div>
          {isTransfer && (
             <div className="flex-1 animate-in fade-in slide-in-from-left-2">
-               <select value={targetAccountId} onChange={e => setTargetAccountId(e.target.value)} className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-1.5 text-xs outline-none focus:ring-1 focus:ring-blue-500">
+               <select value={targetAccountId} onChange={e => setTargetAccountId(e.target.value)} className="w-full bg-white dark:bg-black/20 border border-gray-200 dark:border-white/10 rounded-lg px-3 py-1.5 text-xs outline-none focus:ring-1 focus:ring-blue-500 text-gray-900 dark:text-gray-100">
                   <option value="">Target Account...</option>
                   {accounts.filter(a => a.id !== accountId).map(acc => (
                       <option key={acc.id} value={acc.id}>Transfer to: {acc.name}</option>
@@ -173,9 +173,9 @@ export function RuleForm({ onComplete, token }: { onComplete?: () => void, token
       <div>
         <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1 block">Event Name & Amount</label>
         <div className="grid grid-cols-2 gap-2">
-            <input required type="text" value={name} onChange={e => setName(e.target.value)} placeholder="e.g. AWS Bill" className="w-full bg-black/5 border border-white/10 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none" />
+            <input required type="text" value={name} onChange={e => setName(e.target.value)} placeholder="e.g. AWS Bill" className="w-full bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-gray-100" />
             <div className="relative">
-                <input required type="number" step="0.01" value={amount} onChange={e => setAmount(e.target.value)} placeholder="Amount" className="w-full bg-black/5 border border-white/10 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none pl-8" />
+                <input required type="number" step="0.01" value={amount} onChange={e => setAmount(e.target.value)} placeholder="Amount" className="w-full bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-gray-100 pl-8" />
                 <span className={`absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold ${
                     categoryGroups.find(g => g.categories.some(c => c.id === categoryId))?.type === 'EXPENSE' ? 'text-red-500' : 'text-green-500'
                 }`}>
@@ -188,7 +188,7 @@ export function RuleForm({ onComplete, token }: { onComplete?: () => void, token
       <div className="grid grid-cols-2 gap-2">
         <div>
             <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1 block">Frequency</label>
-            <select value={frequencyType} onChange={e => setFrequencyType(e.target.value)} className="w-full bg-black/5 border border-white/10 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none">
+            <select value={frequencyType} onChange={e => setFrequencyType(e.target.value)} className="w-full bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-gray-100">
             <option value="MONTHLY_DATE">Monthly (Date)</option>
             <option value="FORTNIGHTLY">Fortnightly</option>
             <option value="WEEKLY">Weekly</option>
@@ -198,7 +198,7 @@ export function RuleForm({ onComplete, token }: { onComplete?: () => void, token
         {frequencyType === 'MONTHLY_DATE' && (
             <div>
                  <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1 block">Day of Month</label>
-                 <input type="number" min="1" max="31" value={frequencyValue} onChange={e => setFrequencyValue(e.target.value)} placeholder="1-31" className="w-full bg-black/5 border border-white/10 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none" />
+                 <input type="number" min="1" max="31" value={frequencyValue} onChange={e => setFrequencyValue(e.target.value)} placeholder="1-31" className="w-full bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-gray-100" />
             </div>
         )}
       </div>

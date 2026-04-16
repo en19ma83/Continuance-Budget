@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api import endpoints, recon, auth
 from app.database import SessionLocal, engine, Base
-from app.models import User
+from app.models import User, CategoryGroup
 from app.api.auth import get_password_hash
 import uuid
 
@@ -28,26 +28,27 @@ app.include_router(recon.router, prefix="/api/recon", tags=["reconciliation"])
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
 
 import os
+import sys
 
 @app.on_event("startup")
 def startup_event():
     db = SessionLocal()
     try:
-        # Seed admin user if not exists
+        # Seed admin user
         admin_user = os.getenv("INITIAL_ADMIN_USER", "admin")
         admin_pass = os.getenv("INITIAL_ADMIN_PASS", "admin")
-        
         admin = db.query(User).filter(User.username == admin_user).first()
         if not admin:
-            db.add(User(
-                username=admin_user,
-                hashed_password=get_password_hash(admin_pass)
-            ))
-            db.commit()
+            db.add(User(username=admin_user, hashed_password=get_password_hash(admin_pass)))
         else:
-            # Force update password on every startup to match .env
             admin.hashed_password = get_password_hash(admin_pass)
-            db.commit()
+        db.commit()
+
+        # Seed categories only if none exist (safe to run on every restart)
+        if db.query(CategoryGroup).count() == 0:
+            sys.path.insert(0, '/app')
+            from seed import seed
+            seed()
     finally:
         db.close()
 

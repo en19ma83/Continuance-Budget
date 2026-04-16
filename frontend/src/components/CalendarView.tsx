@@ -64,7 +64,7 @@ export function CalendarView({ entries, baseCurrency = 'AUD' }: { entries: Ledge
 
             <div className="grid grid-cols-7 gap-px bg-white/10 dark:bg-white/5 rounded-xl overflow-hidden border border-white/10">
                 {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                    <div key={day} className="p-3 text-center text-xs font-semibold uppercase tracking-wider bg-black/20 dark:bg-black/40 text-slate-500">
+                    <div key={day} className="p-3 text-center text-xs font-semibold uppercase tracking-wider bg-gray-100 dark:bg-black/40 text-slate-500">
                         {day}
                     </div>
                 ))}
@@ -84,7 +84,7 @@ export function CalendarView({ entries, baseCurrency = 'AUD' }: { entries: Ledge
                             className={`min-h-[120px] p-2 flex flex-col transition-colors relative
                                 ${today
                                     ? 'bg-blue-500/10 dark:bg-blue-500/10 ring-1 ring-inset ring-blue-500/30'
-                                    : 'bg-white/[0.02] dark:bg-black/20 hover:bg-white/5 dark:hover:bg-black/30'
+                                    : 'bg-white dark:bg-black/20 hover:bg-gray-50 dark:hover:bg-black/30'
                                 }`}
                         >
                             <span className={`text-xs font-bold mb-1 w-6 h-6 flex items-center justify-center rounded-full
