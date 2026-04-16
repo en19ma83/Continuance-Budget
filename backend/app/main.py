@@ -1,10 +1,13 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api import endpoints, recon, auth
-from app.database import SessionLocal
+from app.database import SessionLocal, engine, Base
 from app.models import User
 from app.api.auth import get_password_hash
 import uuid
+
+# Safety net: create any tables not yet handled by migrations (e.g. users)
+Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title="Budget App API",
@@ -25,7 +28,6 @@ app.include_router(recon.router, prefix="/api/recon", tags=["reconciliation"])
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
 
 import os
-import uuid
 
 @app.on_event("startup")
 def startup_event():
