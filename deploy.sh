@@ -81,6 +81,13 @@ if ! command -v docker-compose &>/dev/null; then
 fi
 ok "Docker $(docker --version | awk '{print $3}' | tr -d ',') + docker-compose $(docker-compose --version | awk '{print $3}' | tr -d ',') found"
 
+# docker-compose v1 + Docker Engine 25+ removed ContainerConfig from the image
+# inspect API response, causing a KeyError. Pinning DOCKER_API_VERSION to 1.43
+# (Docker Engine 22/23 era) makes the daemon respond with the older format that
+# docker-compose v1 expects.
+export DOCKER_API_VERSION=1.43
+ok "DOCKER_API_VERSION pinned to 1.43 (docker-compose v1 / Engine 25+ compatibility)"
+
 # ── Fresh volume warning ───────────────────────────────────────────────────────
 if $FRESH; then
   echo ""
