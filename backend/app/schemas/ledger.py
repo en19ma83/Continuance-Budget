@@ -3,7 +3,7 @@ from typing import Optional, List
 from datetime import date
 from uuid import UUID
 import enum
-from app.models import EntityType, FrequencyType, LedgerStatus, AssetType
+from app.models import EntityType, FrequencyType, LedgerStatus, AssetType, GstTreatment
 
 class RecurringRuleBase(BaseModel):
     entity: EntityType
@@ -13,6 +13,7 @@ class RecurringRuleBase(BaseModel):
     frequency_value: Optional[int] = None
     anchor_date: date
     is_tax_deductible: bool = False
+    gst_treatment: Optional[GstTreatment] = GstTreatment.N_A
     category_id: Optional[UUID] = None
     account_id: Optional[UUID] = None
     transfer_to_account_id: Optional[UUID] = None
@@ -45,6 +46,7 @@ class LedgerEntryOut(LedgerEntryBase):
     category_color: Optional[str] = None
     category_name: Optional[str] = None
     entity: Optional[EntityType] = None
+    gst_treatment: Optional[GstTreatment] = None
 
     class Config:
         from_attributes = True
@@ -104,6 +106,11 @@ class AccountBase(BaseModel):
     entity: EntityType
     is_on_budget: bool = True
     starting_balance: float = 0.0
+    # Credit card fields (nullable — only relevant when type == 'Credit Card')
+    credit_limit: Optional[float] = None
+    balance_tracking_method: Optional[str] = None  # 'LIMIT_REMAINING' | 'AMOUNT_OWING'
+    statement_date: Optional[int] = None            # Day of month 1-31
+    statement_due_days: Optional[int] = None        # Days after statement close until payment due
 
 class AccountCreate(AccountBase):
     pass

@@ -13,9 +13,9 @@ export function RuleForm({ onComplete, token }: { onComplete?: () => void, token
   const [name, setName] = useState('');
   const [amount, setAmount] = useState('');
   const [frequencyType, setFrequencyType] = useState('MONTHLY_DATE');
-  const [frequencyValue, setFrequencyValue] = useState<string>('1');
   const [anchorDate, setAnchorDate] = useState(new Date().toISOString().split('T')[0]);
   const [isTaxEvent, setIsTaxEvent] = useState(false);
+  const [gstTreatment, setGstTreatment] = useState('N_A');
   const [entity, setEntity] = useState(defaultEntity);
   const [categoryId, setCategoryId] = useState<string>('');
 
@@ -61,9 +61,10 @@ export function RuleForm({ onComplete, token }: { onComplete?: () => void, token
       name,
       amount: isExpense ? -Math.abs(parseFloat(amount)) : parseFloat(amount),
       frequency_type: frequencyType,
-      frequency_value: frequencyType === 'MONTHLY_DATE' ? parseInt(frequencyValue) : null,
+      frequency_value: null, // MONTHLY_DATE derives day from anchor_date; unused for other types
       anchor_date: anchorDate,
       is_tax_deductible: isTaxEvent,
+      gst_treatment: entity === 'BUSINESS' ? gstTreatment : 'N_A',
       entity: entity,
       category_id: categoryId || null,
       account_id: accountId || null,
@@ -88,8 +89,8 @@ export function RuleForm({ onComplete, token }: { onComplete?: () => void, token
         setIsTransfer(false);
         setTargetAccountId('');
         setFrequencyType('MONTHLY_DATE');
-        setFrequencyValue('1');
         setIsTaxEvent(false);
+        setGstTreatment('N_A');
         if (onComplete) onComplete();
       } else {
         console.error('Failed to create rule');
@@ -185,26 +186,27 @@ export function RuleForm({ onComplete, token }: { onComplete?: () => void, token
         </div>
       </div>
       
-      <div className="grid grid-cols-2 gap-2">
-        <div>
-            <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1 block">Frequency</label>
-            <select value={frequencyType} onChange={e => setFrequencyType(e.target.value)} className="w-full bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-gray-100">
-            <option value="MONTHLY_DATE">Monthly (Date)</option>
-            <option value="FORTNIGHTLY">Fortnightly</option>
-            <option value="WEEKLY">Weekly</option>
-            <option value="ANNUAL">Annual</option>
-            </select>
-        </div>
-        {frequencyType === 'MONTHLY_DATE' && (
-            <div>
-                 <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1 block">Day of Month</label>
-                 <input type="number" min="1" max="31" value={frequencyValue} onChange={e => setFrequencyValue(e.target.value)} placeholder="1-31" className="w-full bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-gray-100" />
-            </div>
-        )}
+      <div>
+        <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1 block">Frequency</label>
+        <select value={frequencyType} onChange={e => setFrequencyType(e.target.value)} className="w-full bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-gray-100">
+          <option value="MONTHLY_DATE">Monthly (repeats on anchor day)</option>
+          <option value="FORTNIGHTLY">Fortnightly</option>
+          <option value="WEEKLY">Weekly</option>
+          <option value="ANNUAL">Annual</option>
+          <option value="ONCE">One-off (Single Payment)</option>
+        </select>
       </div>
 
+      {frequencyType === 'ONCE' && (
+        <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/30 text-xs text-amber-600 dark:text-amber-400 leading-relaxed animate-in fade-in zoom-in-95">
+          <strong>One-off payment:</strong> A single projected entry will be created on the date below. For a credit card payment, set the Account to your CC account.
+        </div>
+      )}
+
       <div>
-        <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1 block">Anchor Date</label>
+        <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1 block">
+          {frequencyType === 'ONCE' ? 'Payment Date' : frequencyType === 'MONTHLY_DATE' ? 'Anchor Date (repeats this day monthly)' : 'Anchor Date'}
+        </label>
         <div className="relative">
           <LucideCalendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none z-10" />
           <input
@@ -219,8 +221,24 @@ export function RuleForm({ onComplete, token }: { onComplete?: () => void, token
 
       <div className="flex items-center gap-2 pt-2">
         <input type="checkbox" id="tax_deductible" checked={isTaxEvent} onChange={e => setIsTaxEvent(e.target.checked)} className="rounded bg-black/5 border-white/10" />
-        <label htmlFor="tax_deductible" className="text-sm">GST/Tax Linked Component</label>
+        <label htmlFor="tax_deductible" className="text-sm">Tax Deductible</label>
       </div>
+
+      {entity === 'BUSINESS' && (
+        <div className="animate-in fade-in slide-in-from-top-2">
+          <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1 block">GST / BAS Treatment</label>
+          <select
+            value={gstTreatment}
+            onChange={e => setGstTreatment(e.target.value)}
+            className="w-full bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg px-4 py-2 focus:ring-2 focus:ring-purple-500 outline-none text-gray-900 dark:text-gray-100"
+          >
+            <option value="N_A">N/A (No GST)</option>
+            <option value="BAS_INCL">Tax Inclusive (GST in amount)</option>
+            <option value="BAS_EXCL">Tax Exclusive (GST on top)</option>
+            <option value="GST_FREE">GST Free</option>
+          </select>
+        </div>
+      )}
 
       <button type="submit" className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold rounded-lg py-3 hover:opacity-90 transition-opacity mt-4">
         Generate Projection Logic

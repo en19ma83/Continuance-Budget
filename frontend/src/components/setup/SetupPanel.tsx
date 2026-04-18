@@ -3,6 +3,7 @@ import { useEntity } from '../../contexts/EntityContext';
 import { API_BASE } from '../../utils/api';
 import { LucidePlus, LucideX, LucideWallet, Trash2, Edit3 } from 'lucide-react';
 import { AssetManager } from './AssetManager';
+import { CategoryManager } from './CategoryManager';
 
 type Account = {
   id: string;
@@ -11,6 +12,10 @@ type Account = {
   entity: string;
   is_on_budget: boolean;
   starting_balance: number;
+  credit_limit?: number;
+  balance_tracking_method?: string;
+  statement_date?: number;
+  statement_due_days?: number;
 };
 
 export function SetupPanel({ onRefresh, baseCurrency = 'AUD', token }: { onRefresh: () => void, baseCurrency?: string, token: string | null }) {
@@ -23,6 +28,11 @@ export function SetupPanel({ onRefresh, baseCurrency = 'AUD', token }: { onRefre
   const [newEntity, setNewEntity] = useState(Array.from(activeEntities)[0] || 'PERSONAL');
   const [isOnBudget, setIsOnBudget] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
+  // CC-specific fields
+  const [creditLimit, setCreditLimit] = useState('');
+  const [balanceTrackingMethod, setBalanceTrackingMethod] = useState('AMOUNT_OWING');
+  const [statementDate, setStatementDate] = useState('');
+  const [statementDueDays, setStatementDueDays] = useState('14');
 
   const fetchAccounts = async () => {
     const params = new URLSearchParams();
@@ -39,12 +49,17 @@ export function SetupPanel({ onRefresh, baseCurrency = 'AUD', token }: { onRefre
   }, [activeEntities, token]);
 
   const handleCreate = async () => {
-    const payload = {
+    const isCC = newType === 'Credit Card';
+    const payload: any = {
       name: newName,
       type: newType,
       entity: newEntity,
       is_on_budget: isOnBudget,
-      starting_balance: parseFloat(newBalance)
+      starting_balance: parseFloat(newBalance),
+      credit_limit: isCC && creditLimit ? parseFloat(creditLimit) : null,
+      balance_tracking_method: isCC ? balanceTrackingMethod : null,
+      statement_date: isCC && statementDate ? parseInt(statementDate) : null,
+      statement_due_days: isCC && statementDueDays ? parseInt(statementDueDays) : null,
     };
 
     const url = editingId 
@@ -91,6 +106,10 @@ export function SetupPanel({ onRefresh, baseCurrency = 'AUD', token }: { onRefre
     setNewBalance(acc.starting_balance.toString());
     setNewEntity(acc.entity as any);
     setIsOnBudget(acc.is_on_budget);
+    setCreditLimit(acc.credit_limit?.toString() ?? '');
+    setBalanceTrackingMethod(acc.balance_tracking_method ?? 'AMOUNT_OWING');
+    setStatementDate(acc.statement_date?.toString() ?? '');
+    setStatementDueDays(acc.statement_due_days?.toString() ?? '14');
     setShowAdd(true);
   };
 
@@ -140,7 +159,59 @@ export function SetupPanel({ onRefresh, baseCurrency = 'AUD', token }: { onRefre
                 <label htmlFor="on-budget" className="text-xs">On Budget</label>
              </div>
           </div>
-          <button 
+          {newType === 'Credit Card' && (
+            <div className="space-y-2 animate-in fade-in slide-in-from-top-2 border-t border-white/10 pt-3">
+              <div className="text-[10px] font-bold uppercase tracking-widest text-amber-400 mb-1">Credit Card Settings</div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-[10px] text-slate-500 block mb-1">Credit Limit</label>
+                  <input
+                    type="number"
+                    placeholder="e.g. 10000"
+                    value={creditLimit}
+                    onChange={e => setCreditLimit(e.target.value)}
+                    className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] text-slate-500 block mb-1">Balance Display</label>
+                  <select
+                    value={balanceTrackingMethod}
+                    onChange={e => setBalanceTrackingMethod(e.target.value)}
+                    className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm"
+                  >
+                    <option value="AMOUNT_OWING">Amount Owing</option>
+                    <option value="LIMIT_REMAINING">Limit Remaining</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[10px] text-slate-500 block mb-1">Statement Closes (Day)</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="31"
+                    placeholder="e.g. 15"
+                    value={statementDate}
+                    onChange={e => setStatementDate(e.target.value)}
+                    className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] text-slate-500 block mb-1">Payment Due (Days After)</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="60"
+                    placeholder="e.g. 14"
+                    value={statementDueDays}
+                    onChange={e => setStatementDueDays(e.target.value)}
+                    className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+          <button
             onClick={handleCreate}
             className="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 rounded-lg text-sm transition-colors"
           >
@@ -159,6 +230,12 @@ export function SetupPanel({ onRefresh, baseCurrency = 'AUD', token }: { onRefre
               <div>
                 <div className="font-semibold text-sm">{acc.name}</div>
                 <div className="text-[10px] text-slate-500 uppercase tracking-wider">{acc.type} • {acc.is_on_budget ? 'Budgeted' : 'Withheld'}</div>
+                {acc.type === 'Credit Card' && acc.credit_limit && (
+                  <div className="text-[10px] text-amber-400 mt-0.5">
+                    Limit: {acc.credit_limit.toLocaleString('en-US', { style: 'currency', currency: baseCurrency })}
+                    {acc.statement_date ? ` · Stmt closes: ${acc.statement_date}th` : ''}
+                  </div>
+                )}
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -185,6 +262,7 @@ export function SetupPanel({ onRefresh, baseCurrency = 'AUD', token }: { onRefre
       </div>
 
       <AssetManager onRefresh={onRefresh} baseCurrency={baseCurrency} token={token} />
+      <CategoryManager token={token} />
     </div>
   );
 }

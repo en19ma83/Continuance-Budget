@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-from typing import List
+from typing import List, Optional
 from uuid import UUID
 import datetime
 
@@ -32,19 +32,25 @@ router = APIRouter()
 @router.get("/ledger", response_model=List[LedgerEntryOut])
 def get_ledger(
     entities: List[EntityType] = Query([...]),
+    account_ids: Optional[List[UUID]] = Query(None),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    active_accounts = (
-        db.query(Account)
-        .filter(
-            Account.user_id == current_user.id,
-            Account.entity.in_(entities),
-            Account.is_on_budget == True,
-        )
-        .all()
+    # Fetch all on-budget accounts for the entity filter
+    account_query = db.query(Account).filter(
+        Account.user_id == current_user.id,
+        Account.entity.in_(entities),
+        Account.is_on_budget == True,
     )
-    account_ids = [a.id for a in active_accounts]
+    all_active_accounts = account_query.all()
+
+    # If account_ids filter provided, restrict to those specific accounts
+    if account_ids:
+        active_accounts = [a for a in all_active_accounts if a.id in account_ids]
+    else:
+        active_accounts = all_active_accounts
+
+    ledger_account_ids = [a.id for a in active_accounts]
     total_starting_balance = sum(a.starting_balance for a in active_accounts)
 
     balance_calc = (
@@ -55,7 +61,7 @@ def get_ledger(
     query = (
         db.query(LedgerEntry, Account.entity, balance_calc)
         .join(Account, LedgerEntry.account_id == Account.id)
-        .filter(LedgerEntry.user_id == current_user.id, LedgerEntry.account_id.in_(account_ids))
+        .filter(LedgerEntry.user_id == current_user.id, LedgerEntry.account_id.in_(ledger_account_ids))
         .order_by(LedgerEntry.date, LedgerEntry.id)
         .all()
     )
@@ -319,6 +325,235 @@ def create_category_group(
     db.commit()
     db.refresh(db_group)
     return db_group
+
+
+@router.delete("/categories/groups/{group_id}")
+def delete_category_group(
+    group_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    group = db.query(CategoryGroup).filter(CategoryGroup.id == group_id).first()
+    if not group:
+        raise HTTPException(status_code=404, detail="Category group not found")
+    db.delete(group)
+    db.commit()
+    return {"status": "deleted"}
+
+
+@router.post("/categories", response_model=CategoryOut)
+def create_category(
+    cat_data: CategoryCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    db_cat = Category(**cat_data.model_dump())
+    db.add(db_cat)
+    db.commit()
+    db.refresh(db_cat)
+    return db_cat
+
+
+@router.put("/categories/{category_id}", response_model=CategoryOut)
+def update_category(
+    category_id: UUID,
+    cat_data: CategoryCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    cat = db.query(Category).filter(Category.id == category_id).first()
+    if not cat:
+        raise HTTPException(status_code=404, detail="Category not found")
+    for key, value in cat_data.model_dump().items():
+        setattr(cat, key, value)
+    db.commit()
+    db.refresh(cat)
+    return cat
+
+
+@router.delete("/categories/{category_id}")
+def delete_category(
+    category_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    cat = db.query(Category).filter(Category.id == category_id).first()
+    if not cat:
+        raise HTTPException(status_code=404, detail="Category not found")
+    db.delete(cat)
+    db.commit()
+    return {"status": "deleted"}
+
+
+# ---------------------------------------------------------------------------
+# Liability Summary (Item 6 + 8)
+# ---------------------------------------------------------------------------
+
+@router.get("/liabilities/summary")
+def get_liabilities_summary(
+    entities: List[EntityType] = Query([...]),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Returns a combined liability picture:
+    - Credit card accounts: current balance derived from ledger (projected spend per statement period)
+    - Loan/mortgage assets marked is_liability=True: current_value + interest_rate
+    """
+    result = []
+    today = datetime.date.today()
+
+    # ── CC Accounts ──────────────────────────────────────────────────────────
+    cc_accounts = (
+        db.query(Account)
+        .filter(
+            Account.user_id == current_user.id,
+            Account.entity.in_(entities),
+            Account.type == "Credit Card",
+        )
+        .all()
+    )
+
+    for acc in cc_accounts:
+        # Actual spend recorded against this CC
+        actual_sum = (
+            db.query(func.sum(LedgerEntry.amount))
+            .filter(
+                LedgerEntry.account_id == acc.id,
+                LedgerEntry.user_id == current_user.id,
+                LedgerEntry.status == LedgerStatus.ACTUAL,
+            )
+            .scalar() or 0
+        )
+        # Projected spend for the current statement period
+        stmt_close_day = acc.statement_date or 1
+        if today.day <= stmt_close_day:
+            period_start = (today.replace(day=1) - datetime.timedelta(days=1)).replace(day=stmt_close_day + 1) \
+                if stmt_close_day < today.day else today.replace(day=1)
+        else:
+            period_start = today.replace(day=stmt_close_day + 1) if stmt_close_day < 28 else today.replace(day=1)
+
+        projected_period = (
+            db.query(func.sum(LedgerEntry.amount))
+            .filter(
+                LedgerEntry.account_id == acc.id,
+                LedgerEntry.user_id == current_user.id,
+                LedgerEntry.status == LedgerStatus.PROJECTED,
+                LedgerEntry.date >= period_start,
+                LedgerEntry.date <= today.replace(day=stmt_close_day) if stmt_close_day >= today.day
+                    else (today.replace(month=today.month % 12 + 1, day=stmt_close_day) if today.month < 12
+                          else today.replace(year=today.year + 1, month=1, day=stmt_close_day)),
+            )
+            .scalar() or 0
+        )
+
+        # Amount owing = starting_balance offset + all actual debits (negative amounts = spend)
+        amount_owing = acc.starting_balance + actual_sum
+        # Flip sign: CC spend is negative amounts; amount_owing represents what's owed (positive)
+        amount_owing_display = -amount_owing if amount_owing < 0 else amount_owing
+
+        utilisation = None
+        if acc.credit_limit and acc.credit_limit > 0:
+            utilisation = round((amount_owing_display / acc.credit_limit) * 100, 1)
+
+        # Statement due date
+        due_date = None
+        if acc.statement_date and acc.statement_due_days:
+            try:
+                stmt_month = today.month if today.day <= acc.statement_date else (today.month % 12 + 1)
+                stmt_year = today.year if stmt_month >= today.month else today.year + 1
+                close_date = datetime.date(stmt_year, stmt_month, acc.statement_date)
+                due_date = (close_date + datetime.timedelta(days=acc.statement_due_days)).isoformat()
+            except ValueError:
+                due_date = None
+
+        result.append({
+            "id": str(acc.id),
+            "name": acc.name,
+            "type": "credit_card",
+            "balance": round(amount_owing_display, 2),
+            "credit_limit": acc.credit_limit,
+            "utilisation": utilisation,
+            "balance_tracking_method": acc.balance_tracking_method or "AMOUNT_OWING",
+            "projected_this_period": round(-projected_period, 2),
+            "statement_due_date": due_date,
+        })
+
+    # ── Loan / Mortgage Assets ───────────────────────────────────────────────
+    liability_assets = (
+        db.query(Asset)
+        .filter(
+            Asset.user_id == current_user.id,
+            Asset.entity.in_(entities),
+            Asset.is_liability == True,
+        )
+        .all()
+    )
+
+    for asset in liability_assets:
+        lvr = None
+        if asset.linked_loan_id:
+            # This asset IS the loan; find its linked property
+            prop = (
+                db.query(Asset)
+                .filter(Asset.linked_loan_id == asset.id, Asset.user_id == current_user.id)
+                .first()
+            )
+            if prop and prop.current_value > 0:
+                lvr = round((asset.current_value / prop.current_value) * 100, 1)
+
+        asset_type = "mortgage" if asset.type == AssetType.LOAN else "loan"
+        result.append({
+            "id": str(asset.id),
+            "name": asset.name,
+            "type": asset_type,
+            "balance": round(asset.current_value, 2),
+            "interest_rate": asset.interest_rate,
+            "lvr": lvr,
+            "credit_limit": None,
+            "utilisation": None,
+            "projected_this_period": None,
+            "statement_due_date": None,
+        })
+
+    return result
+
+
+# ---------------------------------------------------------------------------
+# Ledger entry update (Item 9 — edit transactions)
+# ---------------------------------------------------------------------------
+
+from pydantic import BaseModel as _PydBaseModel
+
+class LedgerEntryUpdate(_PydBaseModel):
+    date: Optional[datetime.date] = None
+    name: Optional[str] = None
+    amount: Optional[float] = None
+    status: Optional[LedgerStatus] = None
+    category_id: Optional[UUID] = None
+
+
+@router.put("/transactions/{tx_id}", response_model=LedgerEntryOut)
+def update_transaction(
+    tx_id: UUID,
+    update: LedgerEntryUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    tx = (
+        db.query(LedgerEntry)
+        .filter(LedgerEntry.id == tx_id, LedgerEntry.user_id == current_user.id)
+        .first()
+    )
+    if not tx:
+        raise HTTPException(status_code=404, detail="Transaction not found")
+
+    for field, value in update.model_dump(exclude_none=True).items():
+        setattr(tx, field, value)
+
+    db.commit()
+    db.refresh(tx)
+    return tx
 
 
 # ---------------------------------------------------------------------------
@@ -597,9 +832,7 @@ def get_asset_projection(
 # Device Tokens (push notifications — mobile edition)
 # ---------------------------------------------------------------------------
 
-from pydantic import BaseModel as _PydanticBase
-
-class _DeviceRegisterRequest(_PydanticBase):
+class _DeviceRegisterRequest(_PydBaseModel):
     token: str
     platform: str
 

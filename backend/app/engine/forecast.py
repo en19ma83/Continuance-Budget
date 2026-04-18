@@ -14,8 +14,8 @@ def generate_forecast(rule: RecurringRule, months_ahead: int = 12) -> list[Ledge
     dates = []
     
     if rule.frequency_type == FrequencyType.MONTHLY_DATE:
-        # Generates every Nth of the month
-        dates = rrule(MONTHLY, dtstart=start, bymonthday=rule.frequency_value, until=until)
+        # Derive the day-of-month from the anchor date itself (frequency_value is ignored)
+        dates = rrule(MONTHLY, dtstart=start, bymonthday=rule.anchor_date.day, until=until)
     
     elif rule.frequency_type == FrequencyType.FORTNIGHTLY:
         # Generates every second week matching the start weekday

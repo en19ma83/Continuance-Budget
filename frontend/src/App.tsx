@@ -10,6 +10,7 @@ import { ImportWizard } from './components/ImportWizard';
 import { SetupPanel } from './components/setup/SetupPanel';
 import { Login } from './components/Login';
 import { CashFlowHorizons } from './components/CashFlowHorizons';
+import { LiabilityTracker } from './components/LiabilityTracker';
 import { LucideGlobe, LucideLock, LucideTrendingUp, LucideNetwork, LucideLogOut } from 'lucide-react';
 
 function App() {
@@ -33,6 +34,8 @@ function App() {
   const [stats, setStats] = useState<any>({ on_budget: 0, off_budget: 0, total: 0, assets_total: 0, liabilities_total: 0, equity_total: 0, net_worth: 0, base_currency: 'AUD' });
   const [baseCurrency, setBaseCurrency] = useState('AUD');
   const [isLoading, setIsLoading] = useState(true);
+  const [accounts, setAccounts] = useState<any[]>([]);
+  const [filterAccountId, setFilterAccountId] = useState<string>('');
   const CURRENCIES = ['AUD', 'USD', 'EUR', 'GBP', 'NZD', 'CAD', 'SGD'];
 
   const fetchStats = () => {
@@ -47,13 +50,27 @@ function App() {
         .catch(() => setIsLoading(false));
   };
 
-  const fetchLedger = () => {
+  const fetchAccounts = () => {
+    const params = new URLSearchParams();
+    activeEntities.forEach(e => params.append('entities', e));
+    if (activeEntities.size === 0) { setAccounts([]); return; }
+    fetch(`${API_BASE}/api/accounts?${params.toString()}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+    })
+        .then(res => res.json())
+        .then(data => { if (data) setAccounts(data); })
+        .catch(console.error);
+  };
+
+  const fetchLedger = (accountId?: string) => {
+    const id = accountId !== undefined ? accountId : filterAccountId;
     const params = new URLSearchParams();
     activeEntities.forEach(e => params.append('entities', e));
     if (activeEntities.size === 0) {
         setLedgerEntries([]);
         return;
     }
+    if (id) params.append('account_ids', id);
     fetch(`${API_BASE}/api/ledger?${params.toString()}`, {
         headers: { 'Authorization': `Bearer ${token}` }
     })
@@ -64,8 +81,10 @@ function App() {
 
   useEffect(() => {
     if (token) {
-        fetchLedger();
+        fetchLedger('');
         fetchStats();
+        fetchAccounts();
+        setFilterAccountId('');
     }
   }, [activeEntities, baseCurrency, token]);
 
@@ -200,6 +219,7 @@ function App() {
            )}
 
            <CashFlowHorizons entries={ledgerEntries} baseCurrency={baseCurrency} />
+           <LiabilityTracker token={token} baseCurrency={baseCurrency} />
         </section>
 
         {/* Dashboard Grid */}
@@ -251,7 +271,7 @@ function App() {
 
           {/* Right Columns - Ledger & Timeline */}
           <div className="lg:col-span-2 glass rounded-2xl p-6 h-[800px] overflow-y-auto">
-            <div className="flex justify-between items-center mb-6">
+            <div className="flex justify-between items-center mb-6 gap-4 flex-wrap">
               <div className="flex items-center gap-4">
                 <h2 className="text-xl font-semibold">Perpetual Ledger</h2>
                 <div className="glass ml-4 flex rounded-full overflow-hidden p-1">
@@ -269,6 +289,22 @@ function App() {
                   </button>
                 </div>
               </div>
+              {accounts.length > 0 && (
+                <select
+                  value={filterAccountId}
+                  onChange={e => {
+                    setFilterAccountId(e.target.value);
+                    fetchLedger(e.target.value);
+                  }}
+                  className="glass text-xs font-semibold rounded-full px-3 py-1.5 border border-white/10 outline-none focus:ring-1 focus:ring-blue-500 bg-transparent cursor-pointer"
+                  title="Filter by account"
+                >
+                  <option value="">All Accounts</option>
+                  {accounts.map(acc => (
+                    <option key={acc.id} value={acc.id}>{acc.name} ({acc.type})</option>
+                  ))}
+                </select>
+              )}
             </div>
 
             <div className="relative">

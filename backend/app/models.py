@@ -26,6 +26,12 @@ class CategoryType(str, enum.Enum):
     EXPENSE = "EXPENSE"
     TRANSFER = "TRANSFER"
 
+class GstTreatment(str, enum.Enum):
+    BAS_INCL = "BAS_INCL"   # Tax-inclusive (GST included in amount)
+    BAS_EXCL = "BAS_EXCL"   # Tax-exclusive (GST on top of amount)
+    GST_FREE = "GST_FREE"   # GST-free supply
+    N_A = "N_A"             # Not applicable (personal / no GST)
+
 class CategoryGroup(Base):
     __tablename__ = "category_groups"
 
@@ -97,6 +103,12 @@ class Account(Base):
     starting_balance = Column(Float, default=0.0)
     currency = Column(String, default="AUD") # e.g. "AUD", "USD"
     
+    # Credit card-specific fields (nullable — only relevant when type == 'Credit Card')
+    credit_limit = Column(Float, nullable=True)
+    balance_tracking_method = Column(String, nullable=True)  # 'LIMIT_REMAINING' | 'AMOUNT_OWING'
+    statement_date = Column(Integer, nullable=True)           # Day of month (1-31)
+    statement_due_days = Column(Integer, nullable=True)       # Days after statement close that payment is due
+
     rules = relationship("RecurringRule", foreign_keys="RecurringRule.account_id", back_populates="account")
     ledger_entries = relationship("LedgerEntry", foreign_keys="LedgerEntry.account_id", back_populates="account")
     assets = relationship("Asset", foreign_keys="Asset.account_id", back_populates="account")
@@ -113,6 +125,7 @@ class RecurringRule(Base):
     frequency_value = Column(Integer, nullable=True)  # e.g., 17 for the 17th of the month
     anchor_date = Column(Date, nullable=False)
     is_tax_deductible = Column(Boolean, default=False)
+    gst_treatment = Column(Enum(GstTreatment), nullable=True, default=GstTreatment.N_A)
     currency = Column(String, default="AUD")
     category_id = Column(UUID(as_uuid=True), ForeignKey("categories.id"), nullable=True)
     account_id = Column(UUID(as_uuid=True), ForeignKey("accounts.id"), nullable=True)
@@ -137,6 +150,7 @@ class LedgerEntry(Base):
     running_balance = Column(Float, nullable=True)  # Populated via query calculation
     currency = Column(String, default="AUD")
     amount_primary = Column(Float, nullable=True) # Converted to base currency
+    gst_treatment = Column(Enum(GstTreatment), nullable=True)
     rule_id = Column(UUID(as_uuid=True), ForeignKey("recurring_rules.id"), nullable=True)
     account_id = Column(UUID(as_uuid=True), ForeignKey("accounts.id"), nullable=True)
     category_id = Column(UUID(as_uuid=True), ForeignKey("categories.id"), nullable=True)

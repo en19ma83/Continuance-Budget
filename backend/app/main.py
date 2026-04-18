@@ -44,11 +44,17 @@ def startup_event():
             admin.hashed_password = get_password_hash(admin_pass)
         db.commit()
 
-        # Seed categories only if none exist (safe to run on every restart)
+        # Seed personal categories if none exist yet
+        sys.path.insert(0, '/app')
+        from seed import seed, seed_business_only, BUSINESS_GROUPS
         if db.query(CategoryGroup).count() == 0:
-            sys.path.insert(0, '/app')
-            from seed import seed
             seed()
+        else:
+            # Ensure business categories exist even on existing installs
+            biz_names = {g["name"] for g in BUSINESS_GROUPS}
+            existing_names = {g.name for g in db.query(CategoryGroup).all()}
+            if not biz_names.intersection(existing_names):
+                seed_business_only()
     finally:
         db.close()
 
