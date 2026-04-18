@@ -72,14 +72,16 @@ if [ ! -f ".env" ]; then
 fi
 ok ".env present"
 
-# docker-compose available
+# docker available
 if ! command -v docker &>/dev/null; then
   fail "Docker is not installed or not in PATH."
 fi
-if ! command -v docker-compose &>/dev/null; then
-  fail "'docker-compose' not found. Install it with: pip install docker-compose"
+
+# docker compose v2 plugin check
+if ! docker compose version &>/dev/null; then
+  fail "'docker compose' (v2 plugin) not available. Update Docker Desktop to 3.6+ or install the Compose plugin: https://docs.docker.com/compose/install/"
 fi
-ok "Docker and docker-compose found"
+ok "Docker $(docker --version | awk '{print $3}' | tr -d ',') + Compose $(docker compose version --short) found"
 
 # ── Fresh volume warning ───────────────────────────────────────────────────────
 if $FRESH; then
@@ -103,10 +105,10 @@ ok "Repository up to date: $(git log -1 --format='%h %s')"
 # ── Step 2: Stop containers ───────────────────────────────────────────────────
 step "Stopping existing containers"
 if $FRESH; then
-  docker-compose down --volumes --remove-orphans
+  docker compose down --volumes --remove-orphans
   warn "Database volume destroyed (--fresh)"
 else
-  docker-compose down --remove-orphans
+  docker compose down --remove-orphans
   ok "Containers stopped (data volume preserved)"
 fi
 
@@ -119,16 +121,16 @@ if $NO_CACHE; then
 fi
 
 # shellcheck disable=SC2086
-docker-compose build $BUILD_ARGS
+docker compose build $BUILD_ARGS
 ok "Images built"
 
 # ── Step 4: Start database first, wait for health ─────────────────────────────
 step "Starting database"
-docker-compose up -d db
+docker compose up -d db
 echo -n "  Waiting for PostgreSQL to be ready"
 
 for i in $(seq 1 30); do
-  if docker-compose exec -T db pg_isready -q 2>/dev/null; then
+  if docker compose exec -T db pg_isready -q 2>/dev/null; then
     echo ""
     ok "PostgreSQL is ready"
     break
@@ -143,7 +145,7 @@ done
 
 # ── Step 5: Start all services (force-recreate) ───────────────────────────────
 step "Starting all services (force-recreate)"
-docker-compose up -d --force-recreate
+docker compose up -d --force-recreate
 
 # ── Step 6: Wait for backend and confirm migrations ran ───────────────────────
 step "Waiting for backend (migrations run on startup)"
@@ -161,7 +163,7 @@ for i in $(seq 1 30); do
   if [ "$i" -eq 30 ]; then
     echo ""
     warn "Backend did not respond after 90s — checking logs for errors:"
-    docker-compose logs --tail=40 backend
+    docker compose logs --tail=40 backend
     fail "Backend health check failed. Check the logs above."
   fi
 done
@@ -169,7 +171,7 @@ done
 # ── Step 7: Print migration log lines ─────────────────────────────────────────
 step "Migration output (from backend startup log)"
 divider
-docker-compose logs backend 2>&1 \
+docker compose logs backend 2>&1 \
   | grep -E "(Running upgrade|INFO \[alembic|alembic|Seed complete|Database ready|ERROR|Traceback)" \
   | tail -20 \
   || echo -e "${DIM}  (no migration lines found — backend may have started from a cached state)${RESET}"
@@ -177,7 +179,7 @@ divider
 
 # ── Step 8: Final status ──────────────────────────────────────────────────────
 step "Container status"
-docker-compose ps
+docker compose ps
 
 # ── Done ─────────────────────────────────────────────────────────────────────
 echo ""
@@ -190,5 +192,5 @@ echo -e "  API       →  ${BOLD}http://localhost:8000${RESET}"
 echo -e "  API Docs  →  ${BOLD}http://localhost:8000/docs${RESET}"
 echo -e "  pgAdmin   →  ${BOLD}http://localhost:5050${RESET}"
 echo ""
-echo -e "${DIM}  Logs: docker-compose logs -f backend${RESET}"
+echo -e "${DIM}  Logs: docker compose logs -f backend${RESET}"
 echo ""
