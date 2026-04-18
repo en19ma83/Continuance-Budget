@@ -14,7 +14,7 @@ from app.schemas.ledger import (
     AccountCreate, AccountOut,
     AssetCreate, AssetOut, AssetValueUpdate
 )
-from app.models import CategoryGroup, Category, Account, Asset, AssetValueHistory, AssetType
+from app.models import CategoryGroup, Category, Account, Asset, AssetValueHistory, AssetType, DeviceToken
 from app.schemas.ledger import CategoryGroupCreate, CategoryGroupOut, CategoryCreate, CategoryOut
 from app.engine.forecast import generate_forecast
 from app.engine.amortization import calculate_projected_loan_balances
@@ -591,3 +591,40 @@ def get_asset_projection(
     dummy_req = type("obj", (object,), {"entities": [asset.entity], "horizon_days": 365})
     ledger = generate_forecast(dummy_req, db)
     return calculate_projected_loan_balances(asset, ledger)
+
+
+# ---------------------------------------------------------------------------
+# Device Tokens (push notifications — mobile edition)
+# ---------------------------------------------------------------------------
+
+from pydantic import BaseModel as _PydanticBase
+
+class _DeviceRegisterRequest(_PydanticBase):
+    token: str
+    platform: str
+
+@router.post("/devices/register", status_code=204)
+def register_device(
+    payload: _DeviceRegisterRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    existing = db.query(DeviceToken).filter(DeviceToken.token == payload.token).first()
+    if existing:
+        existing.user_id = current_user.id
+        existing.platform = payload.platform
+    else:
+        db.add(DeviceToken(user_id=current_user.id, token=payload.token, platform=payload.platform))
+    db.commit()
+
+@router.delete("/devices/unregister/{token}", status_code=204)
+def unregister_device(
+    token: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    db.query(DeviceToken).filter(
+        DeviceToken.token == token,
+        DeviceToken.user_id == current_user.id,
+    ).delete()
+    db.commit()

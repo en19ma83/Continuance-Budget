@@ -183,3 +183,15 @@ class User(Base):
     email = Column(String, unique=True, index=True, nullable=True)
     hashed_password = Column(String, nullable=False)
     is_active = Column(Boolean, default=True)
+    device_tokens = relationship("DeviceToken", back_populates="user", cascade="all, delete-orphan")
+
+class DeviceToken(Base):
+    __tablename__ = "device_tokens"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    token = Column(String, nullable=False, unique=True)
+    platform = Column(String, nullable=False)  # 'ios' | 'android'
+    created_at = Column(String, nullable=True)
+
+    user = relationship("User", back_populates="device_tokens")

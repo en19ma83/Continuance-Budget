@@ -55,3 +55,24 @@ def startup_event():
 @app.get("/health")
 def health_check():
     return {"status": "healthy"}
+
+@app.get("/api/version")
+def get_version():
+    """
+    Returns edition metadata so mobile clients can detect Community vs Pro
+    and conditionally render feature-gated screens.
+    Not authenticated — must be callable before login.
+    """
+    return {
+        "edition": "community",
+        "version": "1.0.0",
+        "features": [
+            "ledger",
+            "rules",
+            "assets",
+            "accounts",
+            "categories",
+            "reconciliation",
+            "push_notifications",
+        ],
+    }
