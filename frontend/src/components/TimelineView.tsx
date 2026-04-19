@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowRight, Trash2, Edit3, Check, X } from 'lucide-react';
+import { ArrowRight, Trash2, Edit3, Check, X, CreditCard } from 'lucide-react';
 import { format, isBefore, isAfter, startOfDay } from 'date-fns';
 import { API_BASE } from '../utils/api';
 import { Dialog } from './Dialog';
@@ -15,6 +15,8 @@ type LedgerEntry = {
     category_name?: string;
     category_color?: string;
     rule_id?: string;
+    account_name?: string;
+    account_type?: string;
 };
 
 type DialogState =
@@ -229,13 +231,23 @@ export function TimelineView({
                                         /* ── Normal read mode ── */
                                         <>
                                             <div className="flex items-center gap-4">
-                                                <div className="w-12 h-12 rounded-full bg-black/10 flex flex-col items-center justify-center text-xs font-semibold">
+                                                <div className="w-12 h-12 rounded-full bg-black/10 flex flex-col items-center justify-center text-xs font-semibold shrink-0">
                                                     <span className="opacity-60">{format(entryDate, 'MMM')}</span>
                                                     <span>{format(entryDate, 'd')}</span>
                                                 </div>
                                                 <div>
-                                                    <div className="font-semibold">{entry.name || entry.category_name || (entry.entity + ' Event')}</div>
-                                                    <div className="text-[10px] text-slate-500 uppercase tracking-widest">{entry.category_name || 'Uncategorized'}</div>
+                                                    <div className="font-semibold flex items-center gap-2">
+                                                        {entry.name || entry.category_name || (entry.entity + ' Event')}
+                                                        {entry.account_type === 'Credit Card' && (
+                                                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-red-500/15 text-red-400 border border-red-500/20">
+                                                                <CreditCard className="w-2.5 h-2.5" />
+                                                                Credit
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <div className="text-[10px] text-slate-500 uppercase tracking-widest">
+                                                        {entry.account_name ? `${entry.account_name} · ` : ''}{entry.category_name || 'Uncategorized'}
+                                                    </div>
                                                     <div className="text-xs text-slate-500 dark:text-slate-400 capitalize flex items-center gap-2">
                                                         {entry.status.toLowerCase()}
                                                         {entry.status === 'PROJECTED' && (

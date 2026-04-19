@@ -67,6 +67,7 @@ def get_ledger(
     )
 
     categories = {str(c.id): c for c in db.query(Category).all()}
+    accounts_map = {str(a.id): a for a in all_active_accounts}
 
     results = []
     for entry, ent, bal in query:
@@ -75,6 +76,10 @@ def get_ledger(
         if entry.category_id and str(entry.category_id) in categories:
             entry.category_color = categories[str(entry.category_id)].color
             entry.category_name = categories[str(entry.category_id)].name
+        acc = accounts_map.get(str(entry.account_id)) if entry.account_id else None
+        if acc:
+            entry.account_name = acc.name
+            entry.account_type = acc.type
         results.append(entry)
 
     return results
@@ -566,8 +571,10 @@ def _budget_stats(user_id, entities, base_currency, db):
         .filter(Account.user_id == user_id, Account.entity.in_(entities))
         .all()
     )
-    on_budget_total = 0
-    off_budget_total = 0
+    on_budget_total = 0   # liquid cash (Checking / Savings on-budget)
+    off_budget_total = 0  # withheld cash (off-budget non-CC)
+    cc_owing = 0.0        # total CC balance currently owed (a liability)
+    cc_limit_total = 0.0  # total CC credit limit across all cards
 
     for acc in accounts:
         acc_currency = acc.currency or "AUD"
@@ -584,7 +591,15 @@ def _budget_stats(user_id, entities, base_currency, db):
         current_balance = acc.starting_balance + actual_sum
         current_balance_base = convert(current_balance, acc_currency, base_currency)
 
-        if acc.is_on_budget:
+        if acc.type == "Credit Card":
+            # CC spend is recorded as negative amounts. A negative running balance
+            # means the user owes that amount — treat it as a liability, never as
+            # liquid cash. A positive balance (e.g. overpayment) is ignored for safety.
+            owing = max(0.0, -current_balance_base)
+            cc_owing += owing
+            if acc.credit_limit:
+                cc_limit_total += convert(acc.credit_limit, acc_currency, base_currency)
+        elif acc.is_on_budget:
             on_budget_total += current_balance_base
         else:
             off_budget_total += current_balance_base
@@ -593,8 +608,11 @@ def _budget_stats(user_id, entities, base_currency, db):
         "on_budget": on_budget_total,
         "off_budget": off_budget_total,
         "total": on_budget_total + off_budget_total,
+        "cc_owing": round(cc_owing, 2),
+        "cc_limit": round(cc_limit_total, 2),
         "assets_total": 0,
         "liabilities_total": 0,
+        "equity_total": 0,
         "net_worth": 0,
         "base_currency": base_currency,
     }
@@ -648,7 +666,8 @@ def get_stats_v2(
         "assets_total": assets_val,
         "liabilities_total": liabilities_val,
         "equity_total": equity_total,
-        "net_worth": budget_stats["total"] + assets_val - liabilities_val,
+        # Net worth = liquid cash + assets − asset liabilities (loans/mortgages) − CC owing
+        "net_worth": budget_stats["total"] + assets_val - liabilities_val - budget_stats["cc_owing"],
         "base_currency": budget_stats.get("base_currency", "AUD"),
     }
 

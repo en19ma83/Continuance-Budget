@@ -11,7 +11,7 @@ import { SetupPanel } from './components/setup/SetupPanel';
 import { Login } from './components/Login';
 import { CashFlowHorizons } from './components/CashFlowHorizons';
 import { LiabilityTracker } from './components/LiabilityTracker';
-import { LucideGlobe, LucideLock, LucideTrendingUp, LucideNetwork, LucideLogOut } from 'lucide-react';
+import { LucideGlobe, LucideLock, LucideTrendingUp, LucideNetwork, LucideLogOut, LucideCreditCard, LucideWallet } from 'lucide-react';
 
 function App() {
   const { theme, toggleTheme } = useTheme();
@@ -31,7 +31,7 @@ function App() {
   const [viewMode, setViewMode] = useState<'timeline' | 'calendar'>('timeline');
   const [ledgerEntries, setLedgerEntries] = useState<any[]>([]);
   const [leftTab, setLeftTab] = useState<'rules' | 'reconcile' | 'setup'>('setup');
-  const [stats, setStats] = useState<any>({ on_budget: 0, off_budget: 0, total: 0, assets_total: 0, liabilities_total: 0, equity_total: 0, net_worth: 0, base_currency: 'AUD' });
+  const [stats, setStats] = useState<any>({ on_budget: 0, off_budget: 0, total: 0, cc_owing: 0, cc_limit: 0, assets_total: 0, liabilities_total: 0, equity_total: 0, net_worth: 0, base_currency: 'AUD' });
   const [baseCurrency, setBaseCurrency] = useState('AUD');
   const [isLoading, setIsLoading] = useState(true);
   const [accounts, setAccounts] = useState<any[]>([]);
@@ -160,37 +160,75 @@ function App() {
 
         {/* Liquidity Overview Section */}
         <section className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12 animate-in fade-in slide-in-from-top-4 duration-700">
+
+           {/* Total Liquid Cash */}
            <div className="glass p-6 rounded-3xl border border-gray-200 dark:border-white/10 relative overflow-hidden group">
               <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
                 <LucideGlobe className="w-24 h-24" />
               </div>
-              <div className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-2">Total Combined Liquidity <span className="text-blue-400">({baseCurrency})</span></div>
+              <div className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-2">Total Liquid Cash <span className="text-blue-400">({baseCurrency})</span></div>
               <div className="text-4xl font-black">{stats.total.toLocaleString('en-US', { style: 'currency', currency: baseCurrency })}</div>
-              <div className="mt-4 flex items-center gap-2 text-xs text-blue-400 font-semibold bg-blue-500/10 px-3 py-1 rounded-full w-fit">
+              <div className="text-[10px] text-slate-500 mt-1 italic">Real cash in Checking &amp; Savings accounts only.</div>
+              <div className="mt-3 flex items-center gap-2 text-xs text-blue-400 font-semibold bg-blue-500/10 px-3 py-1 rounded-full w-fit">
                 <LucideTrendingUp className="w-3 h-3" />
-                Linked Across {activeEntities.size} Entities
+                Linked Across {activeEntities.size} {activeEntities.size === 1 ? 'Entity' : 'Entities'}
               </div>
            </div>
 
+           {/* Liquid Cash breakdown */}
            <div className="glass p-6 rounded-3xl border border-gray-200 dark:border-white/10 flex flex-col justify-center">
               <div className="flex items-center gap-3 mb-1">
-                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                <div className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Spendable Budget (On-Budget)</div>
+                <LucideWallet className="w-3 h-3 text-green-500" />
+                <div className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Liquid Cash (On-Budget)</div>
               </div>
-              <div className="text-2xl font-bold">{stats.on_budget.toLocaleString('en-US', { style: 'currency', currency: baseCurrency })}</div>
-              <div className="text-[10px] text-slate-500 mt-1 italic">Liquid cash currently assigned to forcasting rules.</div>
+              <div className="text-2xl font-bold text-green-400">{stats.on_budget.toLocaleString('en-US', { style: 'currency', currency: baseCurrency })}</div>
+              <div className="text-[10px] text-slate-500 mt-1 italic">Cash in on-budget accounts available for forecasting.</div>
+              {stats.off_budget !== 0 && (
+                <div className="mt-3 flex items-center gap-2">
+                  <LucideLock className="w-3 h-3 text-amber-500" />
+                  <span className="text-[10px] text-slate-500 uppercase tracking-wider">Withheld (Off-Budget):</span>
+                  <span className="text-[10px] font-bold text-amber-400">{stats.off_budget.toLocaleString('en-US', { style: 'currency', currency: baseCurrency })}</span>
+                </div>
+              )}
            </div>
 
-           <div className="glass p-6 rounded-3xl border border-gray-200 dark:border-white/10 flex flex-col justify-center">
+           {/* Credit Card Balance — clearly separated from cash */}
+           <div className={`glass p-6 rounded-3xl flex flex-col justify-center border ${stats.cc_owing > 0 ? 'border-red-500/30 bg-red-500/5' : 'border-gray-200 dark:border-white/10'}`}>
               <div className="flex items-center gap-3 mb-1">
-                <LucideLock className="w-3 h-3 text-amber-500" />
-                <div className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Withheld Assets (Off-Budget)</div>
+                <LucideCreditCard className={`w-3 h-3 ${stats.cc_owing > 0 ? 'text-red-400' : 'text-slate-400'}`} />
+                <div className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Credit Card Balance</div>
               </div>
-              <div className="text-2xl font-bold">{stats.off_budget.toLocaleString('en-US', { style: 'currency', currency: baseCurrency })}</div>
-              <div className="text-[10px] text-slate-500 mt-1 italic">Towed assets excluded from immediate spend reach.</div>
+              {stats.cc_owing > 0 ? (
+                <>
+                  <div className="text-2xl font-bold text-red-400">−{stats.cc_owing.toLocaleString('en-US', { style: 'currency', currency: baseCurrency })}</div>
+                  <div className="text-[10px] text-slate-500 mt-1 italic">Amount currently owed — not your cash.</div>
+                  {stats.cc_limit > 0 && (
+                    <div className="mt-3">
+                      <div className="flex justify-between text-[10px] text-slate-500 mb-1">
+                        <span>Utilisation</span>
+                        <span className={stats.cc_owing / stats.cc_limit > 0.8 ? 'text-red-400 font-bold' : ''}>
+                          {Math.round((stats.cc_owing / stats.cc_limit) * 100)}%
+                        </span>
+                      </div>
+                      <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full rounded-full ${stats.cc_owing / stats.cc_limit > 0.8 ? 'bg-red-500' : stats.cc_owing / stats.cc_limit > 0.5 ? 'bg-amber-500' : 'bg-emerald-500'}`}
+                          style={{ width: `${Math.min((stats.cc_owing / stats.cc_limit) * 100, 100)}%` }}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <>
+                  <div className="text-2xl font-bold text-slate-400">{(0).toLocaleString('en-US', { style: 'currency', currency: baseCurrency })}</div>
+                  <div className="text-[10px] text-slate-500 mt-1 italic">No credit card balance owing.</div>
+                </>
+              )}
            </div>
 
-           {(stats.assets_total > 0 || stats.liabilities_total > 0 || stats.equity_total > 0) && (
+           {/* Net Worth */}
+           {(stats.assets_total > 0 || stats.liabilities_total > 0 || stats.equity_total > 0 || stats.cc_owing > 0) && (
               <div className="glass p-6 rounded-3xl border border-purple-500/30 bg-purple-500/5 col-span-1 md:col-span-3 flex items-center justify-between animate-in zoom-in-95 duration-500 flex-wrap gap-4">
                 <div>
                   <div className="flex items-center gap-2 mb-1">
@@ -198,8 +236,9 @@ function App() {
                     <div className="text-xs font-bold uppercase tracking-widest text-purple-400">Net Worth Analysis</div>
                   </div>
                   <div className="text-4xl font-black text-gray-900 dark:text-white">{stats.net_worth.toLocaleString('en-US', { style: 'currency', currency: baseCurrency })}</div>
+                  <div className="text-[10px] text-slate-500 mt-1">Cash + Assets − Loans − CC owing</div>
                 </div>
-                <div className="flex gap-8 text-right pr-4">
+                <div className="flex gap-8 text-right pr-4 flex-wrap">
                    <div>
                       <div className="text-[10px] text-slate-500 uppercase font-bold">Liquid &amp; Gross Assets</div>
                       <div className="text-lg font-bold text-gray-700 dark:text-slate-300">{(stats.total + stats.assets_total).toLocaleString('en-US', { style: 'currency', currency: baseCurrency })}</div>
@@ -210,10 +249,18 @@ function App() {
                       <div className="text-lg font-bold text-green-400">{stats.equity_total.toLocaleString('en-US', { style: 'currency', currency: baseCurrency })}</div>
                    </div>
                    )}
+                   {stats.liabilities_total > 0 && (
                    <div>
-                      <div className="text-[10px] text-slate-500 uppercase font-bold">Total Liabilities</div>
-                      <div className="text-lg font-bold text-red-400/80">{(stats.liabilities_total).toLocaleString('en-US', { style: 'currency', currency: baseCurrency })}</div>
+                      <div className="text-[10px] text-slate-500 uppercase font-bold">Loans / Mortgages</div>
+                      <div className="text-lg font-bold text-red-400/80">−{stats.liabilities_total.toLocaleString('en-US', { style: 'currency', currency: baseCurrency })}</div>
                    </div>
+                   )}
+                   {stats.cc_owing > 0 && (
+                   <div>
+                      <div className="text-[10px] text-red-400/80 uppercase font-bold">CC Owing</div>
+                      <div className="text-lg font-bold text-red-400">−{stats.cc_owing.toLocaleString('en-US', { style: 'currency', currency: baseCurrency })}</div>
+                   </div>
+                   )}
                 </div>
               </div>
            )}
