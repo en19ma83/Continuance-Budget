@@ -46,9 +46,13 @@ export function TimelineView({
     baseCurrency = 'AUD',
     token,
     onRefresh,
+    categoryGroups = [],
+    accounts = [],
 }: {
+    entries: LedgerEntry[];
+    baseCurrency?: string;
     token?: string | null;
-    onRefresh?: () => void;
+    onRefresh?: (accountId?: string) => void;
     categoryGroups?: CategoryGroupType[];
     accounts?: any[];
 }) {
@@ -97,7 +101,7 @@ export function TimelineView({
 
     const handleSaveEdit = async () => {
         if (!editState) return;
-        const entry = entries.find(e => e.id === editState.id);
+        const entry = entries.find((e: LedgerEntry) => e.id === editState.id);
         if (!entry) return;
 
         // Preserve sign of original amount
@@ -162,7 +166,7 @@ export function TimelineView({
                 {entries.length === 0 ? (
                     <div className="text-center py-12 text-slate-500">No events found.</div>
                 ) : (
-                    entries.map((entry, index) => {
+                    entries.map((entry: LedgerEntry, index: number) => {
                         const entryDate = startOfDay(new Date(entry.date));
                         const isToday = format(entryDate, 'yyyy-MM-dd') === format(today, 'yyyy-MM-dd');
                         const isFuture = isAfter(entryDate, today);
@@ -209,7 +213,7 @@ export function TimelineView({
                                                     <input
                                                         type="text"
                                                         value={editState!.name}
-                                                        onChange={e => setEditState(s => s ? { ...s, name: e.target.value } : s)}
+                                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEditState(s => s ? { ...s, name: e.target.value } : s)}
                                                         placeholder="Name"
                                                         className="bg-black/20 border border-white/10 rounded-lg px-2 py-1.5 text-sm col-span-1 focus:ring-1 focus:ring-blue-500 outline-none"
                                                     />
@@ -217,27 +221,27 @@ export function TimelineView({
                                                         type="number"
                                                         step="0.01"
                                                         value={editState!.amount}
-                                                        onChange={e => setEditState(s => s ? { ...s, amount: e.target.value } : s)}
+                                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEditState(s => s ? { ...s, amount: e.target.value } : s)}
                                                         placeholder="Amount"
                                                         className="bg-black/20 border border-white/10 rounded-lg px-2 py-1.5 text-sm focus:ring-1 focus:ring-blue-500 outline-none"
                                                     />
                                                     <input
                                                         type="date"
                                                         value={editState!.date}
-                                                        onChange={e => setEditState(s => s ? { ...s, date: e.target.value } : s)}
+                                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEditState(s => s ? { ...s, date: e.target.value } : s)}
                                                         className="bg-black/20 border border-white/10 rounded-lg px-2 py-1.5 text-sm focus:ring-1 focus:ring-blue-500 outline-none dark:[color-scheme:dark]"
                                                     />
                                                 </div>
                                                 <div className="grid grid-cols-3 gap-2">
                                                     <select
                                                         value={editState!.category_id}
-                                                        onChange={e => setEditState(s => s ? { ...s, category_id: e.target.value } : s)}
+                                                        onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setEditState(s => s ? { ...s, category_id: e.target.value } : s)}
                                                         className="bg-black/20 border border-white/10 rounded-lg px-2 py-1.5 text-xs focus:ring-1 focus:ring-blue-500 outline-none"
                                                     >
                                                         <option value="">No Category</option>
-                                                        {categoryGroups?.map(grp => (
+                                                        {categoryGroups?.map((grp: CategoryGroupType) => (
                                                             <optgroup key={grp.id} label={grp.name}>
-                                                                {grp.categories.map(cat => (
+                                                                {grp.categories.map((cat: CategoryType) => (
                                                                     <option key={cat.id} value={cat.id}>{cat.name}</option>
                                                                 ))}
                                                             </optgroup>
@@ -245,17 +249,17 @@ export function TimelineView({
                                                     </select>
                                                     <select
                                                         value={editState!.account_id}
-                                                        onChange={e => setEditState(s => s ? { ...s, account_id: e.target.value } : s)}
+                                                        onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setEditState(s => s ? { ...s, account_id: e.target.value } : s)}
                                                         className="bg-black/20 border border-white/10 rounded-lg px-2 py-1.5 text-xs focus:ring-1 focus:ring-blue-500 outline-none"
                                                     >
                                                         <option value="">No Account</option>
-                                                        {accounts?.map(acc => (
+                                                        {accounts?.map((acc: any) => (
                                                             <option key={acc.id} value={acc.id}>{acc.name} ({acc.type})</option>
                                                         ))}
                                                     </select>
                                                     <select
                                                         value={editState!.entity}
-                                                        onChange={e => setEditState(s => s ? { ...s, entity: e.target.value as any } : s)}
+                                                        onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setEditState(s => s ? { ...s, entity: e.target.value as any } : s)}
                                                         className="bg-black/20 border border-white/10 rounded-lg px-2 py-1.5 text-xs focus:ring-1 focus:ring-blue-500 outline-none font-bold"
                                                     >
                                                         <option value="PERSONAL">Personal</option>
