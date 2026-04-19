@@ -32,6 +32,7 @@ function App() {
   const [ledgerEntries, setLedgerEntries] = useState<any[]>([]);
   const [leftTab, setLeftTab] = useState<'rules' | 'reconcile' | 'setup'>('setup');
   const [stats, setStats] = useState<any>({ on_budget: 0, off_budget: 0, total: 0, cc_owing: 0, cc_limit: 0, assets_total: 0, liabilities_total: 0, equity_total: 0, net_worth: 0, base_currency: 'AUD' });
+  const [categoryGroups, setCategoryGroups] = useState<any[]>([]);
   const [baseCurrency, setBaseCurrency] = useState('AUD');
   const [isLoading, setIsLoading] = useState(true);
   const [accounts, setAccounts] = useState<any[]>([]);
@@ -61,6 +62,15 @@ function App() {
         .then(data => { if (data) setAccounts(data); })
         .catch(console.error);
   };
+  
+  const fetchCategoryGroups = () => {
+    fetch(`${API_BASE}/api/categories/groups`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+    })
+        .then(res => res.json())
+        .then(data => { if (data) setCategoryGroups(data); })
+        .catch(console.error);
+  };
 
   const fetchLedger = (accountId?: string) => {
     const id = accountId !== undefined ? accountId : filterAccountId;
@@ -84,6 +94,7 @@ function App() {
         fetchLedger('');
         fetchStats();
         fetchAccounts();
+        fetchCategoryGroups();
         setFilterAccountId('');
     }
   }, [activeEntities, baseCurrency, token]);
@@ -356,7 +367,14 @@ function App() {
 
             <div className="relative">
               {viewMode === 'timeline' ? (
-                <TimelineView entries={ledgerEntries} baseCurrency={baseCurrency} token={token} onRefresh={fetchLedger} />
+                <TimelineView 
+                  entries={ledgerEntries} 
+                  baseCurrency={baseCurrency} 
+                  token={token} 
+                  onRefresh={fetchLedger}
+                  categoryGroups={categoryGroups}
+                  accounts={accounts}
+                />
               ) : (
                 <CalendarView entries={ledgerEntries} baseCurrency={baseCurrency} />
               )}

@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { LucideAlertTriangle, LucideX } from 'lucide-react';
 
 type DialogBase = {
@@ -50,9 +51,9 @@ export function Dialog(props: DialogProps) {
 
     const isDanger = variant === 'danger';
 
-    return (
+    return createPortal(
         <div
-            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            className="fixed inset-0 z-[999] flex items-center justify-center p-4"
             onClick={e => { if (e.target === e.currentTarget) onCancel(); }}
         >
             {/* Backdrop */}
@@ -114,6 +115,7 @@ export function Dialog(props: DialogProps) {
                     </button>
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 }

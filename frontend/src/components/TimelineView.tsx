@@ -14,12 +14,17 @@ type LedgerEntry = {
     liquid_balance: number;
     cc_balance: number;
     entity: 'PERSONAL' | 'BUSINESS';
+    category_id?: string;
+    account_id?: string;
     category_name?: string;
     category_color?: string;
     rule_id?: string;
     account_name?: string;
     account_type?: string;
 };
+
+type CategoryType = { id: string, name: string, color: string };
+type CategoryGroupType = { id: string, name: string, type: string, categories: CategoryType[] };
 
 type DialogState =
     | { type: 'reconcile'; entry: LedgerEntry; value: string }
@@ -31,6 +36,9 @@ type EditState = {
     name: string;
     amount: string;
     date: string;
+    category_id: string;
+    account_id: string;
+    entity: 'PERSONAL' | 'BUSINESS';
 } | null;
 
 export function TimelineView({
@@ -39,10 +47,10 @@ export function TimelineView({
     token,
     onRefresh,
 }: {
-    entries: LedgerEntry[];
-    baseCurrency?: string;
     token?: string | null;
     onRefresh?: () => void;
+    categoryGroups?: CategoryGroupType[];
+    accounts?: any[];
 }) {
     const today = startOfDay(new Date());
     const [dialog, setDialog] = useState<DialogState>(null);
@@ -81,6 +89,9 @@ export function TimelineView({
             name: entry.name || '',
             amount: Math.abs(entry.amount).toString(),
             date: entry.date,
+            category_id: entry.category_id || '',
+            account_id: entry.account_id || '',
+            entity: entry.entity,
         });
     };
 
@@ -102,6 +113,9 @@ export function TimelineView({
                     name: editState.name || undefined,
                     amount: isNaN(newAmount) ? undefined : newAmount,
                     date: editState.date || undefined,
+                    category_id: editState.category_id || null,
+                    account_id: editState.account_id || null,
+                    entity: editState.entity,
                 }),
             });
             setEditState(null);
@@ -190,28 +204,64 @@ export function TimelineView({
                                             <div className="w-12 h-12 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400">
                                                 <Edit3 className="w-4 h-4" />
                                             </div>
-                                            <div className="flex-1 grid grid-cols-3 gap-2">
-                                                <input
-                                                    type="text"
-                                                    value={editState!.name}
-                                                    onChange={e => setEditState(s => s ? { ...s, name: e.target.value } : s)}
-                                                    placeholder="Name"
-                                                    className="bg-black/20 border border-white/10 rounded-lg px-2 py-1.5 text-sm col-span-1 focus:ring-1 focus:ring-blue-500 outline-none"
-                                                />
-                                                <input
-                                                    type="number"
-                                                    step="0.01"
-                                                    value={editState!.amount}
-                                                    onChange={e => setEditState(s => s ? { ...s, amount: e.target.value } : s)}
-                                                    placeholder="Amount"
-                                                    className="bg-black/20 border border-white/10 rounded-lg px-2 py-1.5 text-sm focus:ring-1 focus:ring-blue-500 outline-none"
-                                                />
-                                                <input
-                                                    type="date"
-                                                    value={editState!.date}
-                                                    onChange={e => setEditState(s => s ? { ...s, date: e.target.value } : s)}
-                                                    className="bg-black/20 border border-white/10 rounded-lg px-2 py-1.5 text-sm focus:ring-1 focus:ring-blue-500 outline-none dark:[color-scheme:dark]"
-                                                />
+                                            <div className="flex-1 space-y-2">
+                                                <div className="grid grid-cols-3 gap-2">
+                                                    <input
+                                                        type="text"
+                                                        value={editState!.name}
+                                                        onChange={e => setEditState(s => s ? { ...s, name: e.target.value } : s)}
+                                                        placeholder="Name"
+                                                        className="bg-black/20 border border-white/10 rounded-lg px-2 py-1.5 text-sm col-span-1 focus:ring-1 focus:ring-blue-500 outline-none"
+                                                    />
+                                                    <input
+                                                        type="number"
+                                                        step="0.01"
+                                                        value={editState!.amount}
+                                                        onChange={e => setEditState(s => s ? { ...s, amount: e.target.value } : s)}
+                                                        placeholder="Amount"
+                                                        className="bg-black/20 border border-white/10 rounded-lg px-2 py-1.5 text-sm focus:ring-1 focus:ring-blue-500 outline-none"
+                                                    />
+                                                    <input
+                                                        type="date"
+                                                        value={editState!.date}
+                                                        onChange={e => setEditState(s => s ? { ...s, date: e.target.value } : s)}
+                                                        className="bg-black/20 border border-white/10 rounded-lg px-2 py-1.5 text-sm focus:ring-1 focus:ring-blue-500 outline-none dark:[color-scheme:dark]"
+                                                    />
+                                                </div>
+                                                <div className="grid grid-cols-3 gap-2">
+                                                    <select
+                                                        value={editState!.category_id}
+                                                        onChange={e => setEditState(s => s ? { ...s, category_id: e.target.value } : s)}
+                                                        className="bg-black/20 border border-white/10 rounded-lg px-2 py-1.5 text-xs focus:ring-1 focus:ring-blue-500 outline-none"
+                                                    >
+                                                        <option value="">No Category</option>
+                                                        {categoryGroups?.map(grp => (
+                                                            <optgroup key={grp.id} label={grp.name}>
+                                                                {grp.categories.map(cat => (
+                                                                    <option key={cat.id} value={cat.id}>{cat.name}</option>
+                                                                ))}
+                                                            </optgroup>
+                                                        ))}
+                                                    </select>
+                                                    <select
+                                                        value={editState!.account_id}
+                                                        onChange={e => setEditState(s => s ? { ...s, account_id: e.target.value } : s)}
+                                                        className="bg-black/20 border border-white/10 rounded-lg px-2 py-1.5 text-xs focus:ring-1 focus:ring-blue-500 outline-none"
+                                                    >
+                                                        <option value="">No Account</option>
+                                                        {accounts?.map(acc => (
+                                                            <option key={acc.id} value={acc.id}>{acc.name} ({acc.type})</option>
+                                                        ))}
+                                                    </select>
+                                                    <select
+                                                        value={editState!.entity}
+                                                        onChange={e => setEditState(s => s ? { ...s, entity: e.target.value as any } : s)}
+                                                        className="bg-black/20 border border-white/10 rounded-lg px-2 py-1.5 text-xs focus:ring-1 focus:ring-blue-500 outline-none font-bold"
+                                                    >
+                                                        <option value="PERSONAL">Personal</option>
+                                                        <option value="BUSINESS">Business</option>
+                                                    </select>
+                                                </div>
                                             </div>
                                             <div className="flex gap-1">
                                                 <button
