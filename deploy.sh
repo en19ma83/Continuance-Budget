@@ -81,12 +81,6 @@ if ! command -v docker-compose &>/dev/null; then
 fi
 ok "Docker $(docker --version | awk '{print $3}' | tr -d ',') + docker-compose $(docker-compose --version | awk '{print $3}' | tr -d ',') found"
 
-# docker-compose v1 + Docker Engine 25+ removed ContainerConfig from the image
-# inspect API response, causing a KeyError. Pinning DOCKER_API_VERSION to 1.43
-# (Docker Engine 22/23 era) makes the daemon respond with the older format that
-# docker-compose v1 expects.
-export DOCKER_API_VERSION=1.43
-ok "DOCKER_API_VERSION pinned to 1.43 (docker-compose v1 / Engine 25+ compatibility)"
 
 # ── Fresh volume warning ───────────────────────────────────────────────────────
 if $FRESH; then
@@ -148,9 +142,12 @@ for i in $(seq 1 30); do
   fi
 done
 
-# ── Step 5: Start all services (force-recreate) ───────────────────────────────
-step "Starting all services (force-recreate)"
-docker-compose up -d --force-recreate
+# ── Step 5: Start all services ───────────────────────────────────────────────
+# No --force-recreate needed — docker-compose down already removed all containers.
+# --force-recreate is what triggers the ContainerConfig comparison that breaks
+# docker-compose v1 on Docker Engine 25+. Fresh up after down is equivalent.
+step "Starting all services"
+docker-compose up -d
 
 # ── Step 6: Wait for backend and confirm migrations ran ───────────────────────
 step "Waiting for backend (migrations run on startup)"
