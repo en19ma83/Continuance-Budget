@@ -578,31 +578,54 @@ def _budget_stats(user_id, entities, base_currency, db):
 
     for acc in accounts:
         acc_currency = acc.currency or "AUD"
-        actual_sum = (
-            db.query(func.sum(LedgerEntry.amount))
-            .filter(
-                LedgerEntry.account_id == acc.id,
-                LedgerEntry.user_id == user_id,
-                LedgerEntry.status == LedgerStatus.ACTUAL,
-            )
-            .scalar()
-            or 0
-        )
-        current_balance = acc.starting_balance + actual_sum
-        current_balance_base = convert(current_balance, acc_currency, base_currency)
 
         if acc.type == "Credit Card":
-            # CC spend is recorded as negative amounts. A negative running balance
-            # means the user owes that amount — treat it as a liability, never as
-            # liquid cash. A positive balance (e.g. overpayment) is ignored for safety.
-            owing = max(0.0, -current_balance_base)
-            cc_owing += owing
+            # CC entries stay PROJECTED until reconciled — include ALL statuses so
+            # projected spend is reflected in the owing balance immediately.
+            cc_sum = (
+                db.query(func.sum(LedgerEntry.amount))
+                .filter(
+                    LedgerEntry.account_id == acc.id,
+                    LedgerEntry.user_id == user_id,
+                )
+                .scalar()
+                or 0
+            )
+            current_balance = acc.starting_balance + cc_sum
+            current_balance_base = convert(current_balance, acc_currency, base_currency)
+
             if acc.credit_limit:
-                cc_limit_total += convert(acc.credit_limit, acc_currency, base_currency)
-        elif acc.is_on_budget:
-            on_budget_total += current_balance_base
+                cc_limit_base = convert(acc.credit_limit, acc_currency, base_currency)
+                cc_limit_total += cc_limit_base
+                if acc.balance_tracking_method == "LIMIT_REMAINING":
+                    # starting_balance = credit_limit; spend reduces remaining credit.
+                    # owing = limit − remaining balance (i.e. how much has been spent)
+                    owing = max(0.0, cc_limit_base - current_balance_base)
+                else:
+                    # AMOUNT_OWING: starting_balance = 0; spend goes negative.
+                    owing = max(0.0, -current_balance_base)
+            else:
+                owing = max(0.0, -current_balance_base)
+
+            cc_owing += owing
         else:
-            off_budget_total += current_balance_base
+            actual_sum = (
+                db.query(func.sum(LedgerEntry.amount))
+                .filter(
+                    LedgerEntry.account_id == acc.id,
+                    LedgerEntry.user_id == user_id,
+                    LedgerEntry.status == LedgerStatus.ACTUAL,
+                )
+                .scalar()
+                or 0
+            )
+            current_balance = acc.starting_balance + actual_sum
+            current_balance_base = convert(current_balance, acc_currency, base_currency)
+
+            if acc.is_on_budget:
+                on_budget_total += current_balance_base
+            else:
+                off_budget_total += current_balance_base
 
     return {
         "on_budget": on_budget_total,
