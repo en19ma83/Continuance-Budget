@@ -16,6 +16,7 @@ type Account = {
   balance_tracking_method?: string;
   statement_date?: number;
   statement_due_days?: number;
+  is_charge_card?: boolean;
 };
 
 export function SetupPanel({ onRefresh, baseCurrency = 'AUD', token }: { onRefresh: () => void, baseCurrency?: string, token: string | null }) {
@@ -33,6 +34,8 @@ export function SetupPanel({ onRefresh, baseCurrency = 'AUD', token }: { onRefre
   const [balanceTrackingMethod, setBalanceTrackingMethod] = useState('AMOUNT_OWING');
   const [statementDate, setStatementDate] = useState('');
   const [statementDueDays, setStatementDueDays] = useState('14');
+  const [isChargeCard, setIsChargeCard] = useState(false);
+
 
   const fetchAccounts = async () => {
     const params = new URLSearchParams();
@@ -66,7 +69,9 @@ export function SetupPanel({ onRefresh, baseCurrency = 'AUD', token }: { onRefre
       balance_tracking_method: isCC ? balanceTrackingMethod : null,
       statement_date: isCC && statementDate ? parseInt(statementDate) : null,
       statement_due_days: isCC && statementDueDays ? parseInt(statementDueDays) : null,
+      is_charge_card: isCC ? isChargeCard : false,
     };
+
 
     const url = editingId 
       ? `${API_BASE}/api/accounts/${editingId}`
@@ -120,7 +125,9 @@ export function SetupPanel({ onRefresh, baseCurrency = 'AUD', token }: { onRefre
     setBalanceTrackingMethod(acc.balance_tracking_method ?? 'AMOUNT_OWING');
     setStatementDate(acc.statement_date?.toString() ?? '');
     setStatementDueDays(acc.statement_due_days?.toString() ?? '14');
+    setIsChargeCard(acc.is_charge_card ?? false);
     setShowAdd(true);
+
   };
 
   return (
@@ -178,27 +185,49 @@ export function SetupPanel({ onRefresh, baseCurrency = 'AUD', token }: { onRefre
               </div>
             )}
           </div>
-          {newType === 'Credit Card' && (
-            <div className="space-y-2 animate-in fade-in slide-in-from-top-2 border-t border-white/10 pt-3">
-              <div className="text-[10px] font-bold uppercase tracking-widest text-amber-400 mb-1">Credit Card Settings</div>
+            {newType === 'Credit Card' && (
+            <div className="space-y-4 animate-in fade-in slide-in-from-top-2 border-t border-white/10 pt-3">
+              <div className="flex items-center justify-between">
+                <div className="text-[10px] font-bold uppercase tracking-widest text-amber-400">Credit Card Settings</div>
+                <div className="flex items-center gap-2">
+                  <input 
+                    type="checkbox" 
+                    checked={isChargeCard} 
+                    onChange={e => {
+                      setIsChargeCard(e.target.checked);
+                      if (e.target.checked) {
+                        setBalanceTrackingMethod('AMOUNT_OWING');
+                        setCreditLimit('');
+                      }
+                    }} 
+                    id="is-charge-card" 
+                  />
+                  <label htmlFor="is-charge-card" className="text-[10px] text-slate-400 font-medium whitespace-nowrap">Charge Card (No set limit)</label>
+                </div>
+              </div>
+
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="text-[10px] text-slate-500 block mb-1">Credit Limit</label>
                   <input
                     type="number"
-                    placeholder="e.g. 10000"
+                    placeholder={isChargeCard ? "No Limit" : "e.g. 10000"}
                     value={creditLimit}
                     onChange={e => setCreditLimit(e.target.value)}
-                    className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm"
+                    disabled={isChargeCard}
+                    className={`w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm ${isChargeCard ? 'opacity-50 cursor-not-allowed' : ''}`}
                   />
+
                 </div>
                 <div>
                   <label className="text-[10px] text-slate-500 block mb-1">Balance Display</label>
                   <select
                     value={balanceTrackingMethod}
                     onChange={e => setBalanceTrackingMethod(e.target.value)}
-                    className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm"
+                    disabled={isChargeCard}
+                    className={`w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm ${isChargeCard ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
+
                     <option value="AMOUNT_OWING">Amount Owing</option>
                     <option value="LIMIT_REMAINING">Limit Remaining</option>
                   </select>
@@ -249,9 +278,9 @@ export function SetupPanel({ onRefresh, baseCurrency = 'AUD', token }: { onRefre
               <div>
                 <div className="font-semibold text-sm">{acc.name}</div>
                 <div className="text-[10px] text-slate-500 uppercase tracking-wider">{acc.type} • {acc.is_on_budget ? 'Budgeted' : 'Withheld'}</div>
-                {acc.type === 'Credit Card' && acc.credit_limit && (
+                {acc.type === 'Credit Card' && (
                   <div className="text-[10px] text-amber-400 mt-0.5">
-                    Limit: {acc.credit_limit.toLocaleString('en-US', { style: 'currency', currency: baseCurrency })}
+                    {acc.is_charge_card ? 'Charge Card' : `Limit: ${acc.credit_limit?.toLocaleString('en-US', { style: 'currency', currency: baseCurrency })}`}
                     {acc.statement_date ? ` · Stmt closes: ${acc.statement_date}th` : ''}
                   </div>
                 )}

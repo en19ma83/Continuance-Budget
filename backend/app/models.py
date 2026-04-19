@@ -108,6 +108,7 @@ class Account(Base):
     balance_tracking_method = Column(String, nullable=True)  # 'LIMIT_REMAINING' | 'AMOUNT_OWING'
     statement_date = Column(Integer, nullable=True)           # Day of month (1-31)
     statement_due_days = Column(Integer, nullable=True)       # Days after statement close that payment is due
+    is_charge_card = Column(Boolean, default=False)
 
     rules = relationship("RecurringRule", foreign_keys="RecurringRule.account_id", back_populates="account")
     ledger_entries = relationship("LedgerEntry", foreign_keys="LedgerEntry.account_id", back_populates="account")

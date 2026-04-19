@@ -114,7 +114,8 @@ class AccountBase(BaseModel):
     credit_limit: Optional[float] = None
     balance_tracking_method: Optional[str] = None  # 'LIMIT_REMAINING' | 'AMOUNT_OWING'
     statement_date: Optional[int] = None            # Day of month 1-31
-    statement_due_days: Optional[int] = None        # Days after statement close until payment due
+    statement_due_days: Optional[int] = 14
+    is_charge_card: bool = False
 
 class AccountCreate(AccountBase):
     pass

@@ -99,6 +99,7 @@ export interface Account {
   is_on_budget: boolean;
   starting_balance: number;
   currency: string;
+  is_charge_card: boolean;
 }
 
 export const accountsApi = {
