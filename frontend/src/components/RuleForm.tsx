@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { API_BASE } from '../utils/api';
 import { useEntity } from '../contexts/EntityContext';
-import { LucideCalendar } from 'lucide-react';
+import { LucideCalendar, LucideCreditCard } from 'lucide-react';
 
 type CategoryType = { id: string, name: string, color: string };
 type CategoryGroupType = { id: string, name: string, type: string, categories: CategoryType[] };
@@ -24,9 +24,15 @@ export function RuleForm({ onComplete, token }: { onComplete?: () => void, token
   const [accountId, setAccountId] = useState<string>('');
   const [isTransfer, setIsTransfer] = useState(false);
   const [targetAccountId, setTargetAccountId] = useState<string>('');
-  
+  // CC payment: funding account (the cash account the payment comes FROM)
+  const [fundingAccountId, setFundingAccountId] = useState<string>('');
+
   const [assets, setAssets] = useState<any[]>([]);
   const [assetId, setAssetId] = useState<string>('');
+
+  // Derived: is the selected primary account a Credit Card?
+  const selectedAccount = accounts.find(a => a.id === accountId);
+  const isCCAccount = selectedAccount?.type === 'Credit Card';
 
   useEffect(() => {
     const headers = { 'Authorization': `Bearer ${token}` };
@@ -57,9 +63,21 @@ export function RuleForm({ onComplete, token }: { onComplete?: () => void, token
     const selectedGroup = categoryGroups.find(g => g.categories.some(c => c.id === categoryId));
     const isExpense = selectedGroup?.type === 'EXPENSE';
 
+    // CC payment: amount is always positive (credits the CC account, reducing owing).
+    // The mirror entry on the funding account will be negative (money out of cash account).
+    let finalAmount: number;
+    let transferTarget: string | null;
+    if (isCCAccount) {
+      finalAmount = Math.abs(parseFloat(amount));
+      transferTarget = fundingAccountId || null;
+    } else {
+      finalAmount = isExpense ? -Math.abs(parseFloat(amount)) : parseFloat(amount);
+      transferTarget = isTransfer ? targetAccountId : null;
+    }
+
     const payload = {
       name,
-      amount: isExpense ? -Math.abs(parseFloat(amount)) : parseFloat(amount),
+      amount: finalAmount,
       frequency_type: frequencyType,
       frequency_value: null, // MONTHLY_DATE derives day from anchor_date; unused for other types
       anchor_date: anchorDate,
@@ -68,7 +86,7 @@ export function RuleForm({ onComplete, token }: { onComplete?: () => void, token
       entity: entity,
       category_id: categoryId || null,
       account_id: accountId || null,
-      transfer_to_account_id: isTransfer ? targetAccountId : null,
+      transfer_to_account_id: transferTarget,
       asset_id: assetId || null
     };
 
@@ -88,6 +106,7 @@ export function RuleForm({ onComplete, token }: { onComplete?: () => void, token
         setAssetId('');
         setIsTransfer(false);
         setTargetAccountId('');
+        setFundingAccountId('');
         setFrequencyType('MONTHLY_DATE');
         setIsTaxEvent(false);
         setGstTreatment('N_A');
@@ -154,22 +173,54 @@ export function RuleForm({ onComplete, token }: { onComplete?: () => void, token
         </div>
       )}
 
-      <div className="flex items-center gap-4 bg-gray-50 dark:bg-white/5 p-3 rounded-lg border border-gray-200 dark:border-white/5">
-         <div className="flex items-center gap-2">
+      {/* CC Payment mode — shown automatically when a Credit Card account is selected */}
+      {isCCAccount ? (
+        <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/30 space-y-2 animate-in fade-in zoom-in-95">
+          <div className="flex items-center gap-2 text-xs font-bold text-red-400 uppercase tracking-widest">
+            <LucideCreditCard className="w-3.5 h-3.5" />
+            Credit Card Payment
+          </div>
+          <p className="text-[11px] text-slate-400 leading-relaxed">
+            This entry will <strong>credit your CC account</strong> (reducing what you owe) and
+            <strong> debit the account below</strong> (where the payment comes from).
+          </p>
+          <div>
+            <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 mb-1 block">
+              Fund payment from account <span className="text-red-400">*</span>
+            </label>
+            <select
+              value={fundingAccountId}
+              onChange={e => setFundingAccountId(e.target.value)}
+              className="w-full bg-white dark:bg-black/20 border border-red-500/30 rounded-lg px-3 py-1.5 text-sm outline-none focus:ring-1 focus:ring-red-400 text-gray-900 dark:text-gray-100"
+            >
+              <option value="">Select source account...</option>
+              {accounts
+                .filter(a => a.id !== accountId && a.type !== 'Credit Card')
+                .map(acc => (
+                  <option key={acc.id} value={acc.id}>{acc.name} ({acc.type})</option>
+                ))}
+            </select>
+          </div>
+        </div>
+      ) : (
+        /* Regular transfer toggle for non-CC accounts */
+        <div className="flex items-center gap-4 bg-gray-50 dark:bg-white/5 p-3 rounded-lg border border-gray-200 dark:border-white/5">
+          <div className="flex items-center gap-2">
             <input type="checkbox" id="is_transfer" checked={isTransfer} onChange={e => setIsTransfer(e.target.checked)} />
             <label htmlFor="is_transfer" className="text-sm font-semibold">Is Transfer?</label>
-         </div>
-         {isTransfer && (
+          </div>
+          {isTransfer && (
             <div className="flex-1 animate-in fade-in slide-in-from-left-2">
-               <select value={targetAccountId} onChange={e => setTargetAccountId(e.target.value)} className="w-full bg-white dark:bg-black/20 border border-gray-200 dark:border-white/10 rounded-lg px-3 py-1.5 text-xs outline-none focus:ring-1 focus:ring-blue-500 text-gray-900 dark:text-gray-100">
-                  <option value="">Target Account...</option>
-                  {accounts.filter(a => a.id !== accountId).map(acc => (
-                      <option key={acc.id} value={acc.id}>Transfer to: {acc.name}</option>
-                  ))}
-               </select>
+              <select value={targetAccountId} onChange={e => setTargetAccountId(e.target.value)} className="w-full bg-white dark:bg-black/20 border border-gray-200 dark:border-white/10 rounded-lg px-3 py-1.5 text-xs outline-none focus:ring-1 focus:ring-blue-500 text-gray-900 dark:text-gray-100">
+                <option value="">Target Account...</option>
+                {accounts.filter(a => a.id !== accountId).map(acc => (
+                    <option key={acc.id} value={acc.id}>Transfer to: {acc.name}</option>
+                ))}
+              </select>
             </div>
-         )}
-      </div>
+          )}
+        </div>
+      )}
 
       <div>
         <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1 block">Event Name & Amount</label>
@@ -197,9 +248,9 @@ export function RuleForm({ onComplete, token }: { onComplete?: () => void, token
         </select>
       </div>
 
-      {frequencyType === 'ONCE' && (
+      {frequencyType === 'ONCE' && !isCCAccount && (
         <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/30 text-xs text-amber-600 dark:text-amber-400 leading-relaxed animate-in fade-in zoom-in-95">
-          <strong>One-off payment:</strong> A single projected entry will be created on the date below. For a credit card payment, set the Account to your CC account.
+          <strong>One-off payment:</strong> A single projected entry will be created on the date below.
         </div>
       )}
 

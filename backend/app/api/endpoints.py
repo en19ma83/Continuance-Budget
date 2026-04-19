@@ -597,13 +597,15 @@ def _budget_stats(user_id, entities, base_currency, db):
             if acc.credit_limit:
                 cc_limit_base = convert(acc.credit_limit, acc_currency, base_currency)
                 cc_limit_total += cc_limit_base
-                if acc.balance_tracking_method == "LIMIT_REMAINING":
+                if acc.balance_tracking_method == "AMOUNT_OWING":
+                    # Explicit AMOUNT_OWING: starting_balance = 0, spend goes negative.
+                    owing = max(0.0, -current_balance_base)
+                else:
+                    # LIMIT_REMAINING (default when credit_limit is set — even if
+                    # balance_tracking_method is NULL, this is the natural interpretation):
                     # starting_balance = credit_limit; spend reduces remaining credit.
                     # owing = limit − remaining balance (i.e. how much has been spent)
                     owing = max(0.0, cc_limit_base - current_balance_base)
-                else:
-                    # AMOUNT_OWING: starting_balance = 0; spend goes negative.
-                    owing = max(0.0, -current_balance_base)
             else:
                 owing = max(0.0, -current_balance_base)
 
