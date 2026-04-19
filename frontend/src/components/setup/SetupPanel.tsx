@@ -50,12 +50,18 @@ export function SetupPanel({ onRefresh, baseCurrency = 'AUD', token }: { onRefre
 
   const handleCreate = async () => {
     const isCC = newType === 'Credit Card';
+    const rawBalance = parseFloat(newBalance);
+    // If it's a CC tracking AMOUNT_OWING, store a positive "debt" entry as negative in the DB.
+    const finalStartingBalance = (isCC && balanceTrackingMethod === 'AMOUNT_OWING')
+      ? -Math.abs(rawBalance)
+      : rawBalance;
+
     const payload: any = {
       name: newName,
       type: newType,
       entity: newEntity,
       is_on_budget: isOnBudget,
-      starting_balance: parseFloat(newBalance),
+      starting_balance: finalStartingBalance,
       credit_limit: isCC && creditLimit ? parseFloat(creditLimit) : null,
       balance_tracking_method: isCC ? balanceTrackingMethod : null,
       statement_date: isCC && statementDate ? parseInt(statementDate) : null,
@@ -103,7 +109,11 @@ export function SetupPanel({ onRefresh, baseCurrency = 'AUD', token }: { onRefre
     setEditingId(acc.id);
     setNewName(acc.name);
     setNewType(acc.type);
-    setNewBalance(acc.starting_balance.toString());
+    setNewBalance(
+        (acc.type === 'Credit Card' && acc.balance_tracking_method === 'AMOUNT_OWING')
+        ? Math.abs(acc.starting_balance).toString()
+        : acc.starting_balance.toString()
+    );
     setNewEntity(acc.entity as any);
     setIsOnBudget(acc.is_on_budget);
     setCreditLimit(acc.credit_limit?.toString() ?? '');

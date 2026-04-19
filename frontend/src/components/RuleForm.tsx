@@ -30,7 +30,8 @@ export function RuleForm({ onComplete, token }: { onComplete?: () => void, token
   const [assets, setAssets] = useState<any[]>([]);
   const [assetId, setAssetId] = useState<string>('');
 
-  // Derived: is the selected primary account a Credit Card?
+  // CC mode toggle: SPEND (negative) vs PAYMENT (positive credit + mirror debit)
+  const [ccMode, setCcMode] = useState<'SPEND' | 'PAYMENT'>('SPEND');
   const selectedAccount = accounts.find(a => a.id === accountId);
   const isCCAccount = selectedAccount?.type === 'Credit Card';
 
@@ -68,8 +69,14 @@ export function RuleForm({ onComplete, token }: { onComplete?: () => void, token
     let finalAmount: number;
     let transferTarget: string | null;
     if (isCCAccount) {
-      finalAmount = Math.abs(parseFloat(amount));
-      transferTarget = fundingAccountId || null;
+      if (ccMode === 'PAYMENT') {
+        finalAmount = Math.abs(parseFloat(amount));
+        transferTarget = fundingAccountId || null;
+      } else {
+        // Spend mode: CC expenditure is negative (debt)
+        finalAmount = -Math.abs(parseFloat(amount));
+        transferTarget = null;
+      }
     } else {
       finalAmount = isExpense ? -Math.abs(parseFloat(amount)) : parseFloat(amount);
       transferTarget = isTransfer ? targetAccountId : null;
@@ -173,36 +180,62 @@ export function RuleForm({ onComplete, token }: { onComplete?: () => void, token
         </div>
       )}
 
-      {/* CC Payment mode — shown automatically when a Credit Card account is selected */}
-      {isCCAccount ? (
-        <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/30 space-y-2 animate-in fade-in zoom-in-95">
-          <div className="flex items-center gap-2 text-xs font-bold text-red-400 uppercase tracking-widest">
-            <LucideCreditCard className="w-3.5 h-3.5" />
-            Credit Card Payment
-          </div>
-          <p className="text-[11px] text-slate-400 leading-relaxed">
-            This entry will <strong>credit your CC account</strong> (reducing what you owe) and
-            <strong> debit the account below</strong> (where the payment comes from).
-          </p>
-          <div>
-            <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 mb-1 block">
-              Fund payment from account <span className="text-red-400">*</span>
-            </label>
-            <select
-              value={fundingAccountId}
-              onChange={e => setFundingAccountId(e.target.value)}
-              className="w-full bg-white dark:bg-black/20 border border-red-500/30 rounded-lg px-3 py-1.5 text-sm outline-none focus:ring-1 focus:ring-red-400 text-gray-900 dark:text-gray-100"
+      {/* CC mode selector — shown automatically when a Credit Card account is selected */}
+      {isCCAccount && (
+        <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/30 space-y-3 animate-in fade-in zoom-in-95">
+          <div className="flex rounded-md overflow-hidden border border-red-500/30 p-1 bg-black/20">
+            <button
+              type="button"
+              onClick={() => setCcMode('SPEND')}
+              className={`flex-1 py-1.5 text-[10px] font-bold uppercase tracking-wider transition-all rounded ${ccMode === 'SPEND' ? 'bg-red-500 text-white shadow' : 'text-red-400 hover:text-red-300'}`}
             >
-              <option value="">Select source account...</option>
-              {accounts
-                .filter(a => a.id !== accountId && a.type !== 'Credit Card')
-                .map(acc => (
-                  <option key={acc.id} value={acc.id}>{acc.name} ({acc.type})</option>
-                ))}
-            </select>
+              Spend / Expense
+            </button>
+            <button
+              type="button"
+              onClick={() => setCcMode('PAYMENT')}
+              className={`flex-1 py-1.5 text-[10px] font-bold uppercase tracking-wider transition-all rounded ${ccMode === 'PAYMENT' ? 'bg-emerald-500 text-white shadow' : 'text-emerald-400 hover:text-emerald-300'}`}
+            >
+              CC Payment (Payoff)
+            </button>
           </div>
+
+          {ccMode === 'PAYMENT' ? (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-xs font-bold text-red-400 uppercase tracking-widest">
+                <LucideCreditCard className="w-3.5 h-3.5" />
+                Credit Card Payment
+              </div>
+              <p className="text-[11px] text-slate-400 leading-relaxed">
+                This entry will <strong>credit your CC account</strong> (reducing what you owe) and
+                <strong> debit the account below</strong> (where the payment comes from).
+              </p>
+              <div>
+                <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 mb-1 block">
+                  Fund payment from account <span className="text-red-400">*</span>
+                </label>
+                <select
+                  value={fundingAccountId}
+                  onChange={e => setFundingAccountId(e.target.value)}
+                  className="w-full bg-white dark:bg-black/20 border border-red-500/30 rounded-lg px-3 py-1.5 text-sm outline-none focus:ring-1 focus:ring-red-400 text-gray-900 dark:text-gray-100"
+                >
+                  <option value="">Select source account...</option>
+                  {accounts
+                    .filter(a => a.id !== accountId && a.type !== 'Credit Card')
+                    .map(acc => (
+                      <option key={acc.id} value={acc.id}>{acc.name} ({acc.type})</option>
+                    ))}
+                </select>
+              </div>
+            </div>
+          ) : (
+            <div className="text-[11px] text-slate-400 leading-relaxed">
+              <strong>CC Spending:</strong> This will record an expense (negative amount) directly on the CC account, increasing your debt.
+            </div>
+          )}
         </div>
-      ) : (
+      )}
+      {!isCCAccount && (
         /* Regular transfer toggle for non-CC accounts */
         <div className="flex items-center gap-4 bg-gray-50 dark:bg-white/5 p-3 rounded-lg border border-gray-200 dark:border-white/5">
           <div className="flex items-center gap-2">

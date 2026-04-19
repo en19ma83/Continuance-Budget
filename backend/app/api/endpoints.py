@@ -52,7 +52,15 @@ def get_ledger(
         active_accounts = all_active_accounts
 
     ledger_account_ids = [a.id for a in active_accounts]
-    total_starting_balance = sum(a.starting_balance for a in active_accounts)
+    
+    # Calculate starting balance contribution for the "Net Position" running balance.
+    # For CCs using LIMIT_REMAINING, we must subtract the limit (e.g. 5000 bal - 5000 limit = 0 starting debt).
+    total_starting_balance = 0
+    for a in active_accounts:
+        if a.type == 'Credit Card' and a.balance_tracking_method == 'LIMIT_REMAINING':
+            total_starting_balance += (a.starting_balance - (a.credit_limit or 0))
+        else:
+            total_starting_balance += a.starting_balance
 
     balance_calc = (
         func.sum(LedgerEntry.amount).over(order_by=(LedgerEntry.date, LedgerEntry.id))
