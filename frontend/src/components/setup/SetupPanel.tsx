@@ -144,20 +144,29 @@ export function SetupPanel({ onRefresh, baseCurrency = 'AUD', token }: { onRefre
                 <option value="BUSINESS">Business</option>
              </select>
           </div>
-          <div className="flex items-center justify-between gap-4">
-             <div className="flex-1">
-                <label className="text-[10px] text-slate-500 block mb-1">Starting Balance</label>
-                <input 
-                    type="number" 
-                    value={newBalance} 
-                    onChange={e => setNewBalance(e.target.value)}
-                    className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm"
-                />
-             </div>
-             <div className="flex items-center gap-2 pt-4">
-                <input type="checkbox" checked={isOnBudget} onChange={e => setIsOnBudget(e.target.checked)} id="on-budget" />
-                <label htmlFor="on-budget" className="text-xs">On Budget</label>
-             </div>
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex-1">
+                  <label className="text-[10px] text-slate-500 block mb-1">Starting Balance</label>
+                  <input 
+                      type="number" 
+                      value={newBalance} 
+                      onChange={e => setNewBalance(e.target.value)}
+                      className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm"
+                  />
+              </div>
+              <div className="flex items-center gap-2 pt-4">
+                  <input type="checkbox" checked={isOnBudget} onChange={e => setIsOnBudget(e.target.checked)} id="on-budget" />
+                  <label htmlFor="on-budget" className="text-xs">On Budget</label>
+              </div>
+            </div>
+            {newType === 'Credit Card' && (
+              <div className="text-[10px] text-amber-500/80 italic px-1">
+                {balanceTrackingMethod === 'AMOUNT_OWING' 
+                  ? "→ Enter what you currently OWE (e.g. 1000 if you have a debt)." 
+                  : "→ Enter your CURRENT AVAILABLE credit (e.g. 5000 if the card is empty)."}
+              </div>
+            )}
           </div>
           {newType === 'Credit Card' && (
             <div className="space-y-2 animate-in fade-in slide-in-from-top-2 border-t border-white/10 pt-3">

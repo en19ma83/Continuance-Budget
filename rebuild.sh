@@ -12,13 +12,17 @@ git reset --hard origin/main
 
 # 2. Clean up and Rebuild
 echo "Restarting containers..."
-# Switching to modern 'docker compose' to avoid KeyError: 'ContainerConfig'
-docker compose down
-docker compose up -d --build
+
+# FIX: Disable BuildKit to prevent 'KeyError: ContainerConfig' in legacy docker-compose
+export DOCKER_BUILDKIT=0
+export COMPOSE_DOCKER_CLI_BUILD=0
+
+docker-compose down
+docker-compose up -d --build
 
 echo ""
 echo "---------------------------------------------"
 echo "SUCCESS: Application updated and restarted!"
 echo "---------------------------------------------"
 echo "Status check:"
-docker compose ps
+docker-compose ps

@@ -4,6 +4,7 @@ from sqlalchemy import func
 from typing import List, Optional
 from uuid import UUID
 import datetime
+import calendar
 
 from app.database import get_db
 from app.models import RecurringRule, LedgerEntry, EntityType, LedgerStatus
@@ -430,13 +431,26 @@ def get_liabilities_summary(
             )
             .scalar() or 0
         )
-        # Projected spend for the current statement period
+        # Robust period calculation
         stmt_close_day = acc.statement_date or 1
+        
         if today.day <= stmt_close_day:
-            period_start = (today.replace(day=1) - datetime.timedelta(days=1)).replace(day=stmt_close_day + 1) \
-                if stmt_close_day < today.day else today.replace(day=1)
+            # We are currently in the period that started last month and ends this month
+            prev_month_date = today.replace(day=1) - datetime.timedelta(days=1)
+            _, last_day_prev = calendar.monthrange(prev_month_date.year, prev_month_date.month)
+            period_start = datetime.date(prev_month_date.year, prev_month_date.month, min(stmt_close_day, last_day_prev)) + datetime.timedelta(days=1)
+            
+            _, last_day_this = calendar.monthrange(today.year, today.month)
+            period_end = datetime.date(today.year, today.month, min(stmt_close_day, last_day_this))
         else:
-            period_start = today.replace(day=stmt_close_day + 1) if stmt_close_day < 28 else today.replace(day=1)
+            # We are currently in the period that started this month and ends next month
+            _, last_day_this = calendar.monthrange(today.year, today.month)
+            period_start = datetime.date(today.year, today.month, min(stmt_close_day, last_day_this)) + datetime.timedelta(days=1)
+            
+            next_month = today.month % 12 + 1
+            next_year = today.year if today.month < 12 else today.year + 1
+            _, last_day_next = calendar.monthrange(next_year, next_month)
+            period_end = datetime.date(next_year, next_month, min(stmt_close_day, last_day_next))
 
         projected_period = (
             db.query(func.sum(LedgerEntry.amount))
@@ -445,31 +459,43 @@ def get_liabilities_summary(
                 LedgerEntry.user_id == current_user.id,
                 LedgerEntry.status == LedgerStatus.PROJECTED,
                 LedgerEntry.date >= period_start,
-                LedgerEntry.date <= today.replace(day=stmt_close_day) if stmt_close_day >= today.day
-                    else (today.replace(month=today.month % 12 + 1, day=stmt_close_day) if today.month < 12
-                          else today.replace(year=today.year + 1, month=1, day=stmt_close_day)),
+                LedgerEntry.date <= period_end,
             )
             .scalar() or 0
         )
 
-        # Amount owing = starting_balance offset + all actual debits (negative amounts = spend)
-        amount_owing = acc.starting_balance + actual_sum
-        # Flip sign: CC spend is negative amounts; amount_owing represents what's owed (positive)
-        amount_owing_display = -amount_owing if amount_owing < 0 else amount_owing
+        # Amount owing calculation respecting tracking method (matches _budget_stats logic)
+        current_balance = acc.starting_balance + actual_sum
+        
+        if acc.balance_tracking_method == "AMOUNT_OWING":
+            # Explicit AMOUNT_OWING: Starting balance is debt (usually 0 or positive debt).
+            amount_owing_display = max(0.0, -current_balance)
+        else:
+            # LIMIT_REMAINING (default when credit_limit is set): 
+            # Starting balance is available credit. We owe the difference between the limit and current balance.
+            if acc.credit_limit:
+                amount_owing_display = max(0.0, acc.credit_limit - current_balance)
+            else:
+                amount_owing_display = max(0.0, -current_balance)
 
         utilisation = None
         if acc.credit_limit and acc.credit_limit > 0:
             utilisation = round((amount_owing_display / acc.credit_limit) * 100, 1)
 
-        # Statement due date
+        # Statement due date (robust against different month lengths)
         due_date = None
         if acc.statement_date and acc.statement_due_days:
             try:
                 stmt_month = today.month if today.day <= acc.statement_date else (today.month % 12 + 1)
-                stmt_year = today.year if stmt_month >= today.month else today.year + 1
-                close_date = datetime.date(stmt_year, stmt_month, acc.statement_date)
+                stmt_year = today.year if (stmt_month >= today.month or (today.month == 12 and stmt_month == 1)) else today.year + 1
+                
+                # Get last day of that month for safety
+                _, last_day = calendar.monthrange(stmt_year, stmt_month)
+                safe_day = min(acc.statement_date, last_day)
+                
+                close_date = datetime.date(stmt_year, stmt_month, safe_day)
                 due_date = (close_date + datetime.timedelta(days=acc.statement_due_days)).isoformat()
-            except ValueError:
+            except Exception:
                 due_date = None
 
         result.append({
