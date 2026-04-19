@@ -8,6 +8,8 @@ type LedgerEntry = {
     amount: number;
     status: 'PROJECTED' | 'ACTUAL' | 'PENDING';
     running_balance: number;
+    liquid_balance: number;
+    cc_balance: number;
     entity: 'PERSONAL' | 'BUSINESS';
     category_color?: string;
     category_name?: string;
@@ -75,7 +77,7 @@ export function CalendarView({ entries, baseCurrency = 'AUD' }: { entries: Ledge
 
                 {daysInMonth.map(day => {
                     const dayEntries = entries.filter(e => isSameDay(new Date(e.date + 'T00:00:00'), day));
-                    const endOfDayBalance = dayEntries.length > 0 ? dayEntries[dayEntries.length - 1].running_balance : null;
+                    const lastEntry = dayEntries.length > 0 ? dayEntries[dayEntries.length - 1] : null;
                     const today = isToday(day);
 
                     return (
@@ -108,9 +110,14 @@ export function CalendarView({ entries, baseCurrency = 'AUD' }: { entries: Ledge
                                 ))}
                             </div>
 
-                            {endOfDayBalance !== null && (
-                                <div className="mt-1 pt-1 border-t border-white/10 text-right text-[10px] font-mono font-semibold text-slate-400">
-                                    {endOfDayBalance.toLocaleString('en-US', { style: 'currency', currency: baseCurrency, minimumFractionDigits: 0 })}
+                            {lastEntry && (
+                                <div className="mt-1 pt-1 border-t border-white/10 flex flex-col gap-0.5">
+                                    <div className={`text-right text-[9px] font-mono font-semibold ${lastEntry.liquid_balance < 0 ? 'text-red-400' : 'text-slate-400'}`}>
+                                        <span className="opacity-50">💵</span> {lastEntry.liquid_balance.toLocaleString('en-US', { style: 'currency', currency: baseCurrency, minimumFractionDigits: 0 })}
+                                    </div>
+                                    <div className={`text-right text-[9px] font-mono font-semibold ${lastEntry.cc_balance < 0 ? 'text-red-400' : 'text-slate-400/80'}`}>
+                                        <span className="opacity-50 text-[7px] uppercase tracking-tighter mr-0.5">cc</span> {lastEntry.cc_balance.toLocaleString('en-US', { style: 'currency', currency: baseCurrency, minimumFractionDigits: 0 })}
+                                    </div>
                                 </div>
                             )}
                         </div>
