@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, case
 from typing import List, Optional
 from uuid import UUID
 import datetime
@@ -55,20 +55,34 @@ def get_ledger(
     
     # Calculate starting balance contribution for the "Net Position" running balance.
     # For CCs using LIMIT_REMAINING, we must subtract the limit (e.g. 5000 bal - 5000 limit = 0 starting debt).
-    total_starting_balance = 0
+    liquid_starting_balance = 0
+    cc_starting_balance = 0
     for a in active_accounts:
-        if a.type == 'Credit Card' and a.balance_tracking_method == 'LIMIT_REMAINING':
-            total_starting_balance += (a.starting_balance - (a.credit_limit or 0))
+        if a.type == 'Credit Card':
+            if a.balance_tracking_method == 'LIMIT_REMAINING':
+                cc_starting_balance += (a.starting_balance - (a.credit_limit or 0))
+            else:
+                cc_starting_balance += a.starting_balance
         else:
-            total_starting_balance += a.starting_balance
+            liquid_starting_balance += a.starting_balance
 
     balance_calc = (
         func.sum(LedgerEntry.amount).over(order_by=(LedgerEntry.date, LedgerEntry.id))
-        + total_starting_balance
+        + (liquid_starting_balance + cc_starting_balance)
     ).label("running_balance")
 
+    liquid_balance_calc = (
+        func.sum(case((Account.type != 'Credit Card', LedgerEntry.amount), else_=0)).over(order_by=(LedgerEntry.date, LedgerEntry.id))
+        + liquid_starting_balance
+    ).label("liquid_balance")
+
+    cc_balance_calc = (
+        func.sum(case((Account.type == 'Credit Card', LedgerEntry.amount), else_=0)).over(order_by=(LedgerEntry.date, LedgerEntry.id))
+        + cc_starting_balance
+    ).label("cc_balance")
+
     query = (
-        db.query(LedgerEntry, Account.entity, balance_calc)
+        db.query(LedgerEntry, Account.entity, balance_calc, liquid_balance_calc, cc_balance_calc)
         .join(Account, LedgerEntry.account_id == Account.id)
         .filter(LedgerEntry.user_id == current_user.id, LedgerEntry.account_id.in_(ledger_account_ids))
         .order_by(LedgerEntry.date, LedgerEntry.id)
@@ -79,8 +93,10 @@ def get_ledger(
     accounts_map = {str(a.id): a for a in all_active_accounts}
 
     results = []
-    for entry, ent, bal in query:
+    for entry, ent, bal, liq_bal, cc_bal in query:
         entry.running_balance = bal
+        entry.liquid_balance = liq_bal
+        entry.cc_balance = cc_bal
         entry.entity = ent
         if entry.category_id and str(entry.category_id) in categories:
             entry.category_color = categories[str(entry.category_id)].color

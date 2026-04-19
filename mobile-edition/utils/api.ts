@@ -70,6 +70,8 @@ export interface LedgerEntry {
   amount: number;
   status: 'PROJECTED' | 'ACTUAL' | 'PENDING';
   running_balance: number;
+  liquid_balance: number;
+  cc_balance: number;
   currency: string;
   category_id: string | null;
   account_id: string | null;

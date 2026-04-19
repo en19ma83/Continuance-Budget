@@ -42,6 +42,8 @@ class LedgerEntryOut(LedgerEntryBase):
     id: UUID
     rule_id: Optional[UUID] = None
     running_balance: Optional[float] = None
+    liquid_balance: Optional[float] = None
+    cc_balance: Optional[float] = None
     category_id: Optional[UUID] = None
     category_color: Optional[str] = None
     category_name: Optional[str] = None

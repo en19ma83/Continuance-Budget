@@ -46,9 +46,14 @@ function EntryRow({ entry, currency }: { entry: LedgerEntry; currency: string })
         >
           {entry.amount < 0 ? '' : '+'}{fmt(entry.amount)}
         </Text>
-        <Text className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
-          {fmt(entry.running_balance)}
-        </Text>
+        <View className="flex-row gap-2 mt-0.5">
+          <Text className={`text-[10px] items-center ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+            💵 {fmt(entry.liquid_balance)}
+          </Text>
+          <Text className={`text-[10px] items-center ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+            💳 {fmt(entry.cc_balance)}
+          </Text>
+        </View>
       </View>
     </View>
   );

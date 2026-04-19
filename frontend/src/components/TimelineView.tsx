@@ -11,6 +11,8 @@ type LedgerEntry = {
     amount: number;
     status: 'PROJECTED' | 'ACTUAL' | 'PENDING';
     running_balance: number;
+    liquid_balance: number;
+    cc_balance: number;
     entity: 'PERSONAL' | 'BUSINESS';
     category_name?: string;
     category_color?: string;
@@ -267,8 +269,19 @@ export function TimelineView({
                                                     <div className={`font-medium ${entry.amount > 0 ? 'text-green-500' : 'text-slate-900 dark:text-white'}`}>
                                                         {entry.amount > 0 ? '+' : ''}{entry.amount.toLocaleString('en-US', { style: 'currency', currency: baseCurrency })}
                                                     </div>
-                                                    <div className="text-xs text-slate-500 font-mono mt-1">
-                                                        Bal: {entry.running_balance?.toLocaleString('en-US', { style: 'currency', currency: baseCurrency })}
+                                                    <div className="flex flex-col gap-0.5 mt-1.5 border-t border-white/5 pt-1.5">
+                                                        <div className="text-[10px] text-slate-400 font-mono flex items-center justify-end gap-1.5">
+                                                            <span className="opacity-50">💵</span>
+                                                            <span className={entry.liquid_balance < 0 ? 'text-red-400' : ''}>
+                                                                {entry.liquid_balance?.toLocaleString('en-US', { style: 'currency', currency: baseCurrency })}
+                                                            </span>
+                                                        </div>
+                                                        <div className="text-[10px] text-slate-400 font-mono flex items-center justify-end gap-1.5">
+                                                            <span className="opacity-50 text-[8px] uppercase tracking-tighter">cc</span>
+                                                            <span className={entry.cc_balance < 0 ? 'text-red-400/80' : ''}>
+                                                                {entry.cc_balance?.toLocaleString('en-US', { style: 'currency', currency: baseCurrency })}
+                                                            </span>
+                                                        </div>
                                                     </div>
                                                 </div>
                                                 <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
