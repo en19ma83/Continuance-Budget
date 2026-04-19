@@ -109,7 +109,17 @@ else
   ok "Containers stopped, data volume preserved"
 fi
 
-# ── Step 3: Build images ──────────────────────────────────────────────────────
+# ── Step 3: Reclaim disk space ────────────────────────────────────────────────
+step "Pruning unused Docker objects (build cache, dangling images)"
+docker image prune -f
+docker builder prune -f
+ok "Docker cache cleared"
+
+# Show available disk so it's visible in the deploy log
+DISK_FREE=$(df -h / | awk 'NR==2 {print $4}')
+ok "Disk free: ${DISK_FREE}"
+
+# ── Step 4: Build images ──────────────────────────────────────────────────────
 # BuildKit is on by default in Compose v2 — faster, better caching, parallel builds.
 step "Building images"
 BUILD_ARGS=""
@@ -122,7 +132,7 @@ fi
 docker compose build --pull $BUILD_ARGS
 ok "Images built"
 
-# ── Step 4: Start all services and wait for healthchecks ─────────────────────
+# ── Step 5: Start all services and wait for healthchecks ─────────────────────
 # --force-recreate ensures containers are replaced even if the image tag hasn't changed.
 # --wait blocks until every service with a healthcheck reports healthy (or times out).
 # Compose v2 dependency ordering (depends_on: condition: service_healthy) ensures:
@@ -131,7 +141,7 @@ step "Starting services (waiting for healthchecks)"
 docker compose up -d --force-recreate --wait
 ok "All services healthy"
 
-# ── Step 5: Confirm migrations ran ───────────────────────────────────────────
+# ── Step 6: Confirm migrations ran ───────────────────────────────────────────
 step "Migration log (backend startup)"
 divider
 docker compose logs backend 2>&1 \
@@ -140,7 +150,7 @@ docker compose logs backend 2>&1 \
   || echo -e "${DIM}  (no alembic lines captured — migrations may have run on a prior start)${RESET}"
 divider
 
-# ── Step 6: Final status ──────────────────────────────────────────────────────
+# ── Step 7: Final status ──────────────────────────────────────────────────────
 step "Container status"
 docker compose ps
 
