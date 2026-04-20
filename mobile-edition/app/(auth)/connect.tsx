@@ -25,22 +25,35 @@ export default function ConnectScreen() {
   const router = useRouter();
 
   const connect = async (targetUrl: string) => {
-    const trimmed = targetUrl.trim().replace(/\/$/, '');
+    let trimmed = targetUrl.trim().replace(/\/$/, '');
     if (!trimmed) return;
+
+    // Auto-prepend http:// if no protocol is provided
+    if (!trimmed.startsWith('http://') && !trimmed.startsWith('https://')) {
+      trimmed = `http://${trimmed}`;
+    }
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 8000);
+
     setChecking(true);
     try {
-      const res = await fetch(`${trimmed}/health`, { signal: AbortSignal.timeout(8000) });
-      if (!res.ok) throw new Error('Backend returned an error');
+      console.log(`Checking connection to: ${trimmed}/health`);
+      const res = await fetch(`${trimmed}/health`, { signal: controller.signal });
+      if (!res.ok) throw new Error(`Backend returned status: ${res.status}`);
+      
       await setBackendUrl(trimmed);
       // Fetch edition metadata so feature flags are ready before login
       await refreshEdition(trimmed);
       router.replace('/(auth)/login');
-    } catch {
+    } catch (err: any) {
+      console.error('Connection failed:', err);
       Alert.alert(
         'Cannot reach backend',
-        'Make sure your instance is running and the URL is correct.',
+        `Error: ${err?.name === 'AbortError' ? 'Connection timed out' : err?.message || 'Unknown error'}\n\nURL: ${trimmed}/health`,
       );
     } finally {
+      clearTimeout(timeoutId);
       setChecking(false);
     }
   };

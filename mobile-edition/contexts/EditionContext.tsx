@@ -17,9 +17,16 @@ interface EditionContextValue extends EditionState {
 const EditionContext = createContext<EditionContextValue | null>(null);
 
 async function fetchVersion(baseUrl: string): Promise<{ edition: Edition; version: string; features: string[] }> {
-  const res = await fetch(`${baseUrl}/api/version`, { signal: AbortSignal.timeout(6000) });
-  if (!res.ok) throw new Error('Version endpoint not available');
-  return res.json();
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 6000);
+  
+  try {
+    const res = await fetch(`${baseUrl}/api/version`, { signal: controller.signal });
+    if (!res.ok) throw new Error('Version endpoint not available');
+    return await res.json();
+  } finally {
+    clearTimeout(timeoutId);
+  }
 }
 
 export function EditionProvider({ children }: { children: React.ReactNode }) {

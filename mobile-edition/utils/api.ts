@@ -25,7 +25,22 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
-    throw new ApiError(res.status, body?.detail ?? `HTTP ${res.status}`);
+    let detail = body?.detail ?? `HTTP ${res.status}`;
+    
+    // Handle FastAPI validation error arrays or complex objects
+    if (typeof detail !== 'string') {
+      try {
+        detail = JSON.stringify(detail, (key, value) => 
+          typeof value === 'object' && value !== null && !Array.isArray(value) 
+            ? Object.assign({}, value) // help with non-serializable objects if any
+            : value
+        , 2);
+      } catch {
+        detail = String(detail);
+      }
+    }
+    
+    throw new ApiError(res.status, detail);
   }
 
   return res.json();
@@ -35,6 +50,17 @@ export const api = {
   get: <T>(path: string) => request<T>(path),
   post: <T>(path: string, body: unknown) =>
     request<T>(path, { method: 'POST', body: JSON.stringify(body) }),
+  postForm: <T>(path: string, body: Record<string, string>) => {
+    const formData = new URLSearchParams();
+    for (const [key, value] of Object.entries(body)) {
+      formData.append(key, value);
+    }
+    return request<T>(path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: formData.toString(),
+    });
+  },
   put: <T>(path: string, body: unknown) =>
     request<T>(path, { method: 'PUT', body: JSON.stringify(body) }),
   delete: <T>(path: string) => request<T>(path, { method: 'DELETE' }),
@@ -43,7 +69,7 @@ export const api = {
 // Auth
 export const authApi = {
   login: (username: string, password: string) =>
-    api.post<{ access_token: string }>('/api/auth/login', { username, password }),
+    api.postForm<{ access_token: string }>('/api/auth/login', { username, password }),
   register: (username: string, password: string) =>
     api.post<{ id: string; username: string }>('/api/auth/register', { username, password }),
   me: () => api.get<{ id: string; username: string }>('/api/auth/me'),
@@ -51,15 +77,17 @@ export const authApi = {
 
 // Stats
 export const statsApi = {
-  v2: (entities?: string) =>
-    api.get<{
+  v2: (entities?: string) => {
+    const query = entities || 'entities=PERSONAL&entities=BUSINESS';
+    return api.get<{
       on_budget_balance: number;
       off_budget_balance: number;
       total_assets: number;
       total_liabilities: number;
       net_worth: number;
       base_currency: string;
-    }>(`/api/v2/stats${entities ? `?entities=${entities}` : ''}`),
+    }>(`/api/v2/stats?${query}`);
+  },
 };
 
 // Ledger
@@ -79,8 +107,10 @@ export interface LedgerEntry {
 }
 
 export const ledgerApi = {
-  list: (entities?: string) =>
-    api.get<LedgerEntry[]>(`/api/ledger${entities ? `?entities=${entities}` : ''}`),
+  list: (entities?: string) => {
+    const query = entities || 'entities=PERSONAL&entities=BUSINESS';
+    return api.get<LedgerEntry[]>(`/api/ledger?${query}`);
+  },
   createTransaction: (data: {
     date: string;
     name: string;
@@ -103,8 +133,10 @@ export interface Account {
 }
 
 export const accountsApi = {
-  list: (entities?: string) =>
-    api.get<Account[]>(`/api/accounts${entities ? `?entities=${entities}` : ''}`),
+  list: (entities?: string) => {
+    const query = entities || 'entities=PERSONAL&entities=BUSINESS';
+    return api.get<Account[]>(`/api/accounts?${query}`);
+  },
 };
 
 // Rules
