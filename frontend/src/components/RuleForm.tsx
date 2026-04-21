@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { API_BASE } from '../utils/api';
 import { useEntity } from '../contexts/EntityContext';
-import { LucideCalendar, LucideCreditCard } from 'lucide-react';
+import { LucideCalendar, LucideCreditCard, LucideArrowRight } from 'lucide-react';
 
 type CategoryType = { id: string, name: string, color: string };
 type CategoryGroupType = { id: string, name: string, type: string, categories: CategoryType[] };

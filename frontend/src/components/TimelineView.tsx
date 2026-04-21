@@ -21,6 +21,8 @@ type LedgerEntry = {
     rule_id?: string;
     account_name?: string;
     account_type?: string;
+    category_group_name?: string;
+    category_group_type?: string;
 };
 
 type CategoryType = { id: string, name: string, color: string };

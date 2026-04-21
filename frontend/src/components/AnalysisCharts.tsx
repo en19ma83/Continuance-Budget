@@ -8,6 +8,8 @@ type LedgerEntry = {
     amount: number;
     category_name?: string;
     category_color?: string;
+    account_type?: string;
+    category_group_type?: string;
 };
 
 export function AnalysisCharts({
