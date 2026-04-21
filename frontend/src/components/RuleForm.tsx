@@ -117,6 +117,7 @@ export function RuleForm({ onComplete, token }: { onComplete?: () => void, token
         setFrequencyType('MONTHLY_DATE');
         setIsTaxEvent(false);
         setGstTreatment('N_A');
+        setAnchorDate(new Date().toISOString().split('T')[0]);
         if (onComplete) onComplete();
       } else {
         console.error('Failed to create rule');
@@ -274,6 +275,8 @@ export function RuleForm({ onComplete, token }: { onComplete?: () => void, token
         <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1 block">Frequency</label>
         <select value={frequencyType} onChange={e => setFrequencyType(e.target.value)} className="w-full bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-gray-100">
           <option value="MONTHLY_DATE">Monthly (repeats on anchor day)</option>
+          <option value="QUARTERLY">Quarterly (Every 3 Months)</option>
+          <option value="BI_ANNUAL">Bi-Annual (Every 6 Months)</option>
           <option value="FORTNIGHTLY">Fortnightly</option>
           <option value="WEEKLY">Weekly</option>
           <option value="ANNUAL">Annual</option>

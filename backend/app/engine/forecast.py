@@ -28,6 +28,14 @@ def generate_forecast(rule: RecurringRule, months_ahead: int = 12) -> list[Ledge
     elif rule.frequency_type == FrequencyType.ANNUAL:
         # Generates once a year
         dates = rrule(YEARLY, dtstart=start, until=until)
+
+    elif rule.frequency_type == FrequencyType.QUARTERLY:
+        # Generates every 3 months
+        dates = rrule(MONTHLY, interval=3, dtstart=start, until=until)
+
+    elif rule.frequency_type == FrequencyType.BI_ANNUAL:
+        # Generates every 6 months
+        dates = rrule(MONTHLY, interval=6, dtstart=start, until=until)
         
     elif rule.frequency_type == FrequencyType.ONCE:
         dates = [start]

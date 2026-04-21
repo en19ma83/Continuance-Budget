@@ -142,7 +142,7 @@ export function LiabilityTracker({
               )}
 
               {/* CC statement forecast */}
-              {item.type === 'credit_card' && item.forecast_balance !== undefined && (
+              {item.type === 'credit_card' && item.forecast_balance !== undefined && item.forecast_balance !== null && (
                 <div className="flex items-center justify-between text-[10px] text-slate-400 border-t border-white/5 pt-2">
                   <span>End of Period Forecast</span>
                   <span className={`font-semibold ${item.forecast_balance > (item.balance || 0) ? 'text-red-400' : 'text-green-400'}`}>

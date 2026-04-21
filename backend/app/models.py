@@ -14,6 +14,8 @@ class FrequencyType(str, enum.Enum):
     FORTNIGHTLY = "FORTNIGHTLY"
     MONTHLY_DATE = "MONTHLY_DATE"
     ANNUAL = "ANNUAL"
+    QUARTERLY = "QUARTERLY"
+    BI_ANNUAL = "BI_ANNUAL"
     ONCE = "ONCE"
 
 class LedgerStatus(str, enum.Enum):

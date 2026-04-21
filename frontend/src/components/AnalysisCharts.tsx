@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
-import { format, startOfMonth, endOfMonth, addMonths, isSameMonth, parseISO } from 'date-fns';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
+import { format, startOfMonth, addMonths, isSameMonth, parseISO } from 'date-fns';
 import { LucideChevronLeft, LucideChevronRight, LucideTrendingUp, LucideTrendingDown, LucidePieChart } from 'lucide-react';
 
 type LedgerEntry = {
@@ -22,7 +22,6 @@ export function AnalysisCharts({
 
     const monthData = useMemo(() => {
         const start = targetMonth;
-        const end = endOfMonth(targetMonth);
 
         const filtered = entries.filter(e => {
             const d = parseISO(e.date);
@@ -111,7 +110,7 @@ export function AnalysisCharts({
                                 <Tooltip 
                                     contentStyle={{ backgroundColor: 'rgba(0,0,0,0.8)', border: 'none', borderRadius: '8px', fontSize: '10px' }}
                                     itemStyle={{ color: '#fff' }}
-                                    formatter={(value: number) => fmt(value)}
+                                    formatter={(value: any) => fmt(Number(value))}
                                 />
                             </PieChart>
                         </ResponsiveContainer>

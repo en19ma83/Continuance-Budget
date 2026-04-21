@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
-import { addMonths, format, parseISO, isSameMonth, endOfMonth, startOfMonth } from 'date-fns';
+import { addMonths, format, parseISO, endOfMonth } from 'date-fns';
 import { LucideCalendar, LucideChevronUp, LucideChevronDown, LucideMinus, LucideBarChart3, LucideWaves } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
 type LedgerEntry = {
     date: string;
@@ -169,7 +169,7 @@ export function CashFlowHorizons({
                         <Tooltip 
                             cursor={{ fill: 'rgba(255,255,255,0.05)' }}
                             contentStyle={{ backgroundColor: 'rgba(0,0,0,0.8)', border: 'none', borderRadius: '12px', fontSize: '10px' }}
-                            formatter={(value: number) => [fmt(value), chartMode === 'liquid' ? 'Liquid Cash' : 'Total Net Worth']}
+                            formatter={(value: any) => [fmt(Number(value)), chartMode === 'liquid' ? 'Liquid Cash' : 'Total Net Worth']}
                             labelStyle={{ color: '#94a3b8', fontWeight: 'bold', marginBottom: '4px' }}
                             labelFormatter={(label, payload) => payload[0]?.payload?.fullDate || label}
                         />
