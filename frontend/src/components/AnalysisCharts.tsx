@@ -25,7 +25,7 @@ export function AnalysisCharts({
 
         const filtered = entries.filter(e => {
             const d = parseISO(e.date);
-            return isSameMonth(d, start);
+            return isSameMonth(d, start) && e.category_name !== 'Transfer';
         });
 
         let income = 0;
@@ -55,90 +55,101 @@ export function AnalysisCharts({
     const fmt = (v: number) => v.toLocaleString('en-US', { style: 'currency', currency: baseCurrency, minimumFractionDigits: 0 });
 
     return (
-        <div className="glass p-6 rounded-3xl border border-gray-200 dark:border-white/10 col-span-1 lg:col-span-1 flex flex-col gap-6 animate-in fade-in slide-in-from-right-4 duration-700">
+        <div className="glass p-8 rounded-3xl border border-gray-200 dark:border-white/10 col-span-1 md:col-span-3 flex flex-col gap-8 animate-in fade-in slide-in-from-right-4 duration-700">
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                    <LucidePieChart className="w-4 h-4 text-purple-400" />
-                    <span className="text-xs font-bold uppercase tracking-widest text-purple-400">Monthly Analysis</span>
+                    <LucidePieChart className="w-5 h-5 text-purple-400" />
+                    <span className="text-sm font-bold uppercase tracking-widest text-purple-400">Monthly Analysis</span>
                 </div>
-                <div className="flex items-center gap-2 glass px-2 py-1 rounded-full text-[10px] font-bold">
-                    <button onClick={() => setMonthOffset(o => o - 1)} className="hover:text-purple-400 p-0.5"><LucideChevronLeft className="w-3 h-3" /></button>
-                    <span className="min-w-[80px] text-center uppercase tracking-tighter">{format(targetMonth, 'MMMM yyyy')}</span>
-                    <button onClick={() => setMonthOffset(o => o + 1)} className="hover:text-purple-400 p-0.5"><LucideChevronRight className="w-3 h-3" /></button>
+                <div className="flex items-center gap-2 glass px-3 py-1.5 rounded-full text-xs font-bold">
+                    <button onClick={() => setMonthOffset(o => o - 1)} className="hover:text-purple-400 p-0.5 transition-colors"><LucideChevronLeft className="w-4 h-4" /></button>
+                    <span className="min-w-[120px] text-center uppercase tracking-tighter">{format(targetMonth, 'MMMM yyyy')}</span>
+                    <button onClick={() => setMonthOffset(o => o + 1)} className="hover:text-purple-400 p-0.5 transition-colors"><LucideChevronRight className="w-4 h-4" /></button>
                 </div>
             </div>
 
             {monthData.count === 0 ? (
-                <div className="flex-1 flex items-center justify-center text-slate-500 text-xs italic py-12">
-                    No data for this period
+                <div className="flex-1 flex items-center justify-center text-slate-500 text-sm italic py-20">
+                    No data available for this period (transfers excluded)
                 </div>
             ) : (
-                <>
-                    {/* Ratio metric */}
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="bg-white/5 rounded-2xl p-3 border border-white/5">
-                            <div className="text-[9px] uppercase tracking-widest text-slate-500 mb-1 flex items-center gap-1">
-                                <LucideTrendingUp className="w-2.5 h-2.5 text-green-400" /> Income
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
+                    {/* Metrics Section */}
+                    <div className="lg:col-span-3 space-y-6">
+                        <div className="bg-white/5 rounded-3xl p-5 border border-white/5 group hover:border-green-500/30 transition-all duration-300">
+                            <div className="text-[10px] uppercase font-bold tracking-widest text-slate-500 mb-2 flex items-center gap-2">
+                                <LucideTrendingUp className="w-3 h-3 text-green-400" /> Monthly Income
                             </div>
-                            <div className="text-sm font-bold text-green-400">{fmt(monthData.income)}</div>
+                            <div className="text-2xl font-black text-green-400 group-hover:scale-105 transition-transform origin-left">{fmt(monthData.income)}</div>
                         </div>
-                        <div className="bg-white/5 rounded-2xl p-3 border border-white/5">
-                            <div className="text-[9px] uppercase tracking-widest text-slate-500 mb-1 flex items-center gap-1">
-                                <LucideTrendingDown className="w-2.5 h-2.5 text-red-400" /> Spent
+                        <div className="bg-white/5 rounded-3xl p-5 border border-white/5 group hover:border-red-500/30 transition-all duration-300">
+                            <div className="text-[10px] uppercase font-bold tracking-widest text-slate-500 mb-2 flex items-center gap-2">
+                                <LucideTrendingDown className="w-3 h-3 text-red-400" /> Monthly Spend
                             </div>
-                            <div className="text-sm font-bold text-red-400">{fmt(monthData.expenses)}</div>
+                            <div className="text-2xl font-black text-red-400 group-hover:scale-105 transition-transform origin-left">{fmt(monthData.expenses)}</div>
                         </div>
                     </div>
 
-                    <div className="relative h-48">
+                    {/* Chart Section */}
+                    <div className="lg:col-span-5 relative h-64 lg:h-80 flex items-center justify-center">
                         <ResponsiveContainer width="100%" height="100%">
                             <PieChart>
                                 <Pie
                                     data={monthData.pieData}
                                     cx="50%"
                                     cy="50%"
-                                    innerRadius={50}
-                                    outerRadius={70}
-                                    paddingAngle={4}
+                                    innerRadius={75}
+                                    outerRadius={105}
+                                    paddingAngle={3}
                                     dataKey="value"
                                     stroke="none"
                                 >
                                     {monthData.pieData.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={entry.color} fillOpacity={0.8} />
+                                        <Cell 
+                                            key={`cell-${index}`} 
+                                            fill={entry.color} 
+                                            fillOpacity={0.9}
+                                            className="hover:opacity-100 transition-opacity cursor-pointer outline-none"
+                                        />
                                     ))}
                                 </Pie>
                                 <Tooltip 
-                                    contentStyle={{ backgroundColor: 'rgba(0,0,0,0.8)', border: 'none', borderRadius: '8px', fontSize: '10px' }}
-                                    itemStyle={{ color: '#fff' }}
+                                    contentStyle={{ backgroundColor: 'rgba(0,0,0,0.9)', border: 'none', borderRadius: '12px', fontSize: '11px', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' }}
+                                    itemStyle={{ color: '#fff', fontWeight: 'bold' }}
                                     formatter={(value: any) => fmt(Number(value))}
                                 />
                             </PieChart>
                         </ResponsiveContainer>
                         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                            <div className="text-[9px] uppercase tracking-tighter text-slate-500 font-bold">Inc/Exp Ratio</div>
-                            <div className={`text-lg font-black ${monthData.ratio >= 100 ? 'text-green-400' : 'text-amber-400'}`}>
+                            <div className="text-[10px] uppercase tracking-tighter text-slate-500 font-bold">Inc/Exp Ratio</div>
+                            <div className={`text-3xl font-black ${monthData.ratio >= 100 ? 'text-green-400' : 'text-amber-400'}`}>
                                 {Math.round(monthData.ratio)}%
                             </div>
+                            <div className="text-[8px] text-slate-600 font-medium">Excluded Transfers</div>
                         </div>
                     </div>
 
-                    <div className="space-y-2 max-h-32 overflow-y-auto pr-2 custom-scrollbar">
+                    {/* Categories Section */}
+                    <div className="lg:col-span-4 space-y-3 max-h-[320px] overflow-y-auto pr-4 custom-scrollbar">
+                        <div className="text-[10px] uppercase font-bold tracking-widest text-slate-500 mb-4 border-b border-white/5 pb-2">
+                           Spend Breakdown
+                        </div>
                         {monthData.pieData.map((cat, i) => (
-                            <div key={i} className="flex items-center justify-between text-[10px]">
-                                <div className="flex items-center gap-2">
-                                    <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: cat.color }} />
-                                    <span className="text-slate-300 truncate max-w-[100px]">{cat.name}</span>
+                            <div key={i} className="flex items-center justify-between group hover:bg-white/5 p-2 rounded-xl transition-colors">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-2 h-2 rounded-full shadow-lg" style={{ backgroundColor: cat.color }} />
+                                    <span className="text-xs font-medium text-slate-300 group-hover:text-white transition-colors truncate max-w-[140px]">{cat.name}</span>
                                 </div>
-                                <div className="font-mono text-slate-400">
-                                    {fmt(cat.value)}
-                                    <span className="ml-1 opacity-40 text-[8px]">
-                                        ({Math.round(cat.value / monthData.expenses * 100)}%)
-                                    </span>
+                                <div className="text-right">
+                                    <div className="text-xs font-bold text-slate-300 group-hover:text-white transition-colors">{fmt(cat.value)}</div>
+                                    <div className="text-[9px] text-slate-500 font-medium">
+                                        {Math.round(cat.value / monthData.expenses * 100)}% of total
+                                    </div>
                                 </div>
                             </div>
                         ))}
                     </div>
-                </>
+                </div>
             )}
         </div>
     );
