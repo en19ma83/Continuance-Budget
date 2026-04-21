@@ -7,7 +7,7 @@ import datetime
 import calendar
 
 from app.database import get_db
-from app.models import RecurringRule, LedgerEntry, EntityType, LedgerStatus
+from app.models import RecurringRule, LedgerEntry, EntityType, LedgerStatus, GstTreatment
 from app.schemas.ledger import (
     RecurringRuleBase, RecurringRuleCreate, RecurringRuleOut,
     LedgerEntryCreate, LedgerEntryOut,
@@ -445,13 +445,23 @@ def get_liabilities_summary(
     )
 
     for acc in cc_accounts:
-        # Actual spend recorded against this CC
         actual_sum = (
             db.query(func.sum(LedgerEntry.amount))
             .filter(
                 LedgerEntry.account_id == acc.id,
                 LedgerEntry.user_id == current_user.id,
                 LedgerEntry.status == LedgerStatus.ACTUAL,
+            )
+            .scalar() or 0
+        )
+        
+        # Calculate balance as of TODAY (Actuals + Projected up to today)
+        today_sum = (
+            db.query(func.sum(LedgerEntry.amount))
+            .filter(
+                LedgerEntry.account_id == acc.id,
+                LedgerEntry.user_id == current_user.id,
+                LedgerEntry.date <= today
             )
             .scalar() or 0
         )
@@ -489,7 +499,7 @@ def get_liabilities_summary(
         )
 
         # Amount owing calculation respecting tracking method (matches _budget_stats logic)
-        current_balance = acc.starting_balance + actual_sum
+        current_balance = acc.starting_balance + today_sum
         
         if acc.balance_tracking_method == "AMOUNT_OWING":
             # Explicit AMOUNT_OWING: Starting balance is debt (usually 0 or positive debt).
@@ -501,6 +511,22 @@ def get_liabilities_summary(
                 amount_owing_display = max(0.0, acc.credit_limit - current_balance)
             else:
                 amount_owing_display = max(0.0, -current_balance)
+
+        # Full forecast at end of period (including everything up to period_end)
+        full_period_sum = (
+            db.query(func.sum(LedgerEntry.amount))
+            .filter(
+                LedgerEntry.account_id == acc.id,
+                LedgerEntry.user_id == current_user.id,
+                LedgerEntry.date <= period_end
+            )
+            .scalar() or 0
+        )
+        forecast_balance_raw = acc.starting_balance + full_period_sum
+        if acc.balance_tracking_method == "AMOUNT_OWING":
+            forecast_balance = max(0.0, -forecast_balance_raw)
+        else:
+            forecast_balance = max(0.0, (acc.credit_limit or 0) - forecast_balance_raw) if acc.credit_limit else max(0.0, -forecast_balance_raw)
 
         utilisation = None
         if acc.credit_limit and acc.credit_limit > 0:
@@ -531,6 +557,7 @@ def get_liabilities_summary(
             "utilisation": utilisation,
             "balance_tracking_method": acc.balance_tracking_method or "AMOUNT_OWING",
             "projected_this_period": round(-projected_period, 2),
+            "forecast_balance": round(forecast_balance, 2),
             "statement_due_date": due_date,
         })
 
@@ -568,6 +595,7 @@ def get_liabilities_summary(
             "credit_limit": None,
             "utilisation": None,
             "projected_this_period": None,
+            "forecast_balance": None,
             "statement_due_date": None,
         })
 
@@ -586,6 +614,9 @@ class LedgerEntryUpdate(_PydBaseModel):
     amount: Optional[float] = None
     status: Optional[LedgerStatus] = None
     category_id: Optional[UUID] = None
+    account_id: Optional[UUID] = None
+    asset_id: Optional[UUID] = None
+    gst_treatment: Optional[GstTreatment] = None
 
 
 @router.put("/transactions/{tx_id}", response_model=LedgerEntryOut)
@@ -603,8 +634,30 @@ def update_transaction(
     if not tx:
         raise HTTPException(status_code=404, detail="Transaction not found")
 
-    for field, value in update.model_dump(exclude_none=True).items():
-        setattr(tx, field, value)
+    update_dict = update.model_dump(exclude_none=True)
+    
+    # If part of a series, update the entire series and the rule
+    if tx.rule_id:
+        # Update the RecurringRule itself
+        rule = db.query(RecurringRule).filter(RecurringRule.id == tx.rule_id).first()
+        if rule:
+            # Propagate relevant fields to the rule
+            for field in ["name", "amount", "category_id", "account_id", "asset_id", "gst_treatment"]:
+                if field in update_dict:
+                    setattr(rule, field, update_dict[field])
+        
+        # Propagate relevant fields to all entries in the series
+        # Note: We do NOT propagate date or status
+        propagate_fields = {k: v for k, v in update_dict.items() if k not in ["date", "status"]}
+        if propagate_fields:
+            db.query(LedgerEntry).filter(
+                LedgerEntry.rule_id == tx.rule_id,
+                LedgerEntry.user_id == current_user.id
+            ).update(propagate_fields)
+    else:
+        # Independent transaction update
+        for field, value in update_dict.items():
+            setattr(tx, field, value)
 
     db.commit()
     db.refresh(tx)
@@ -637,6 +690,7 @@ def _budget_stats(user_id, entities, base_currency, db):
                 .filter(
                     LedgerEntry.account_id == acc.id,
                     LedgerEntry.user_id == user_id,
+                    LedgerEntry.date <= datetime.date.today(),
                 )
                 .scalar()
                 or 0

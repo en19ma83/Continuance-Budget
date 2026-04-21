@@ -1,6 +1,7 @@
-import { useState } from 'react';
-import { addMonths, format, parseISO } from 'date-fns';
-import { LucideCalendar, LucideChevronUp, LucideChevronDown, LucideMinus } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { addMonths, format, parseISO, isSameMonth, endOfMonth, startOfMonth } from 'date-fns';
+import { LucideCalendar, LucideChevronUp, LucideChevronDown, LucideMinus, LucideBarChart3, LucideWaves } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
 type LedgerEntry = {
     date: string;
@@ -10,9 +11,9 @@ type LedgerEntry = {
 type Horizon = { key: string; label: string; months: number | null };
 
 const PRESETS: Horizon[] = [
-    { key: '1m',  label: '1 Month',   months: 1  },
-    { key: '3m',  label: '3 Months',  months: 3  },
-    { key: '6m',  label: '6 Months',  months: 6  },
+    { key: '1m', label: '1 Month', months: 1 },
+    { key: '3m', label: '3 Months', months: 3 },
+    { key: '6m', label: '6 Months', months: 6 },
     { key: '12m', label: '12 Months', months: 12 },
 ];
 
@@ -44,16 +45,40 @@ function Delta({ value, currency }: { value: number; currency: string }) {
 
 export function CashFlowHorizons({
     entries,
+    stats,
     baseCurrency = 'AUD',
 }: {
     entries: LedgerEntry[];
+    stats: any;
     baseCurrency?: string;
 }) {
     const [customDate, setCustomDate] = useState('');
     const [selected, setSelected] = useState<string | null>(null);
+    const [chartMode, setChartMode] = useState<'liquid' | 'networth'>('liquid');
 
     const today = new Date();
     const todayBalance = balanceAt(entries, today);
+
+    const chartData = useMemo(() => {
+        const data: { name: string; liquid: number; networth: number; fullDate: string }[] = [];
+        const baseNW = (Number(stats.total) || 0) + (Number(stats.assets_total) || 0) - (Number(stats.liabilities_total) || 0) - (Number(stats.cc_owing) || 0);
+        const nwStart = baseNW - (Number(todayBalance) || 0); // NW excluding current on-budget cash
+
+        for (let i = 1; i <= 12; i++) {
+            const mDate = endOfMonth(addMonths(today, i));
+            const bal = balanceAt(entries, mDate);
+            if (typeof bal === 'number') {
+                const checkedBal: number = bal;
+                data.push({
+                    name: format(mDate, 'MMM'),
+                    liquid: checkedBal,
+                    networth: nwStart + checkedBal,
+                    fullDate: format(mDate, 'MMMM yyyy'),
+                });
+            }
+        }
+        return data;
+    }, [entries, stats, todayBalance]);
 
     const fmt = (v: number | null) =>
         v === null
@@ -87,7 +112,7 @@ export function CashFlowHorizons({
                     {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />}
                 </div>
                 <div className="text-[10px] text-slate-500 font-medium">{sublabel}</div>
-                <div className={`text-lg font-black tracking-tight ${balance === null ? 'text-slate-500' : isSelected ? 'text-blue-300 dark:text-blue-300 text-gray-700' : 'text-gray-900 dark:text-gray-100'}`}>
+                <div className={`text-lg font-black tracking-tight ${balance === null ? 'text-slate-500' : isSelected ? 'text-blue-300 dark:text-blue-300' : 'text-gray-900 dark:text-gray-100'}`}>
                     {fmt(balance)}
                 </div>
                 {delta !== null && <Delta value={delta} currency={baseCurrency} />}
@@ -99,8 +124,8 @@ export function CashFlowHorizons({
     };
 
     return (
-        <div className="glass p-5 rounded-3xl border border-gray-200 dark:border-white/10 col-span-1 md:col-span-3 animate-in fade-in slide-in-from-bottom-2 duration-500">
-            <div className="flex items-center justify-between mb-4">
+        <div className="glass p-6 rounded-3xl border border-gray-200 dark:border-white/10 col-span-1 md:col-span-3 animate-in fade-in slide-in-from-bottom-2 duration-500 flex flex-col gap-6">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <div className="flex items-center gap-2 mb-0.5">
                         <LucideCalendar className="w-4 h-4 text-blue-400" />
@@ -113,6 +138,55 @@ export function CashFlowHorizons({
                         )}
                     </p>
                 </div>
+
+                <div className="flex items-center gap-1 bg-black/20 p-1 rounded-xl w-fit self-start md:self-auto">
+                    <button 
+                        onClick={() => setChartMode('liquid')}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase transition-all ${chartMode === 'liquid' ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/20' : 'text-slate-500 hover:text-slate-300'}`}
+                    >
+                        <LucideWaves className="w-3 h-3" /> Liquid
+                    </button>
+                    <button 
+                        onClick={() => setChartMode('networth')}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase transition-all ${chartMode === 'networth' ? 'bg-purple-500 text-white shadow-lg shadow-purple-500/20' : 'text-slate-500 hover:text-slate-300'}`}
+                    >
+                        <LucideBarChart3 className="w-3 h-3" /> Net Worth
+                    </button>
+                </div>
+            </div>
+
+            {/* Bar Chart Section */}
+            <div className="h-48 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={chartData}>
+                        <XAxis 
+                            dataKey="name" 
+                            axisLine={false} 
+                            tickLine={false} 
+                            tick={{ fontSize: 10, fill: '#64748b', fontWeight: 'bold' }} 
+                            dy={10}
+                        />
+                        <Tooltip 
+                            cursor={{ fill: 'rgba(255,255,255,0.05)' }}
+                            contentStyle={{ backgroundColor: 'rgba(0,0,0,0.8)', border: 'none', borderRadius: '12px', fontSize: '10px' }}
+                            formatter={(value: number) => [fmt(value), chartMode === 'liquid' ? 'Liquid Cash' : 'Total Net Worth']}
+                            labelStyle={{ color: '#94a3b8', fontWeight: 'bold', marginBottom: '4px' }}
+                            labelFormatter={(label, payload) => payload[0]?.payload?.fullDate || label}
+                        />
+                            <Bar 
+                                dataKey={chartMode} 
+                                radius={[6, 6, 0, 0]}
+                            >
+                                {chartData.map((_, index) => (
+                                    <Cell 
+                                        key={`cell-${index}`} 
+                                        fill={chartMode === 'liquid' ? '#60a5fa' : '#a855f7'} 
+                                        fillOpacity={0.4 + (index / 12) * 0.6} 
+                                    />
+                                ))}
+                            </Bar>
+                    </BarChart>
+                </ResponsiveContainer>
             </div>
 
             <div className="flex flex-wrap gap-3">

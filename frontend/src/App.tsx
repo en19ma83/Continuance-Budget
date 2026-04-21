@@ -11,7 +11,8 @@ import { SetupPanel } from './components/setup/SetupPanel';
 import { Login } from './components/Login';
 import { CashFlowHorizons } from './components/CashFlowHorizons';
 import { LiabilityTracker } from './components/LiabilityTracker';
-import { LucideGlobe, LucideLock, LucideTrendingUp, LucideNetwork, LucideLogOut, LucideCreditCard, LucideWallet } from 'lucide-react';
+import { AnalysisCharts } from './components/AnalysisCharts';
+import { LucideGlobe, LucideLock, LucideTrendingUp, LucideNetwork, LucideLogOut, LucideCreditCard, LucideWallet, LucideInfo } from 'lucide-react';
 
 function App() {
   const { theme, toggleTheme } = useTheme();
@@ -204,15 +205,25 @@ function App() {
            </div>
 
            {/* Credit Card Balance — clearly separated from cash */}
-           <div className={`glass p-6 rounded-3xl flex flex-col justify-center border ${stats.cc_owing > 0 ? 'border-red-500/30 bg-red-500/5' : 'border-gray-200 dark:border-white/10'}`}>
-              <div className="flex items-center gap-3 mb-1">
-                <LucideCreditCard className={`w-3 h-3 ${stats.cc_owing > 0 ? 'text-red-400' : 'text-slate-400'}`} />
-                <div className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Credit Card Balance</div>
+           <div className={`glass p-6 rounded-3xl flex flex-col justify-center border relative group ${stats.cc_owing > 0 ? 'border-red-500/30 bg-red-500/5' : 'border-gray-200 dark:border-white/10'}`}>
+              <div className="flex items-center justify-between mb-1">
+                <div className="flex items-center gap-3">
+                  <LucideCreditCard className={`w-3 h-3 ${stats.cc_owing > 0 ? 'text-red-400' : 'text-slate-400'}`} />
+                  <div className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Credit Card Balance</div>
+                </div>
+                <div className="relative group/tooltip">
+                  <LucideInfo className="w-3 h-3 text-slate-500 cursor-help" />
+                  <div className="absolute right-0 bottom-full mb-2 w-48 bg-black/90 p-3 rounded-xl border border-white/10 text-[9px] text-slate-300 backdrop-blur-md opacity-0 pointer-events-none group-hover/tooltip:opacity-100 transition-opacity z-50 shadow-2xl">
+                    <p className="font-bold text-white mb-1 uppercase tracking-tighter">Current Balance Calculation</p>
+                    <p>Includes all <strong>Actual, Pending, and Projected</strong> transactions dated up to today.</p>
+                    <div className="absolute w-2 h-2 bg-black/90 rotate-45 right-1 -bottom-1 border-r border-b border-white/10"></div>
+                  </div>
+                </div>
               </div>
               {stats.cc_owing > 0 ? (
                 <>
                   <div className="text-2xl font-bold text-red-400">−{stats.cc_owing.toLocaleString('en-US', { style: 'currency', currency: baseCurrency })}</div>
-                  <div className="text-[10px] text-slate-500 mt-1 italic">Amount currently owed — not your cash.</div>
+                  <div className="text-[10px] text-slate-500 mt-1 italic">Amount currently owed — as of today.</div>
                   {stats.cc_limit > 0 && (
                     <div className="mt-3">
                       <div className="flex justify-between text-[10px] text-slate-500 mb-1">
@@ -276,7 +287,8 @@ function App() {
               </div>
            )}
 
-           <CashFlowHorizons entries={ledgerEntries} baseCurrency={baseCurrency} />
+           <CashFlowHorizons entries={ledgerEntries} stats={stats} baseCurrency={baseCurrency} />
+           <AnalysisCharts entries={ledgerEntries} baseCurrency={baseCurrency} />
            <LiabilityTracker token={token} baseCurrency={baseCurrency} />
         </section>
 

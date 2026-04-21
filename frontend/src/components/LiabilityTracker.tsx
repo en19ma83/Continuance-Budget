@@ -14,6 +14,7 @@ type LiabilityItem = {
   lvr?: number | null;
   balance_tracking_method?: string;
   projected_this_period?: number | null;
+  forecast_balance?: number | null;
   statement_due_date?: string | null;
 };
 
@@ -141,8 +142,16 @@ export function LiabilityTracker({
               )}
 
               {/* CC statement forecast */}
-              {item.type === 'credit_card' && item.projected_this_period !== null && item.projected_this_period !== undefined && (
+              {item.type === 'credit_card' && item.forecast_balance !== undefined && (
                 <div className="flex items-center justify-between text-[10px] text-slate-400 border-t border-white/5 pt-2">
+                  <span>End of Period Forecast</span>
+                  <span className={`font-semibold ${item.forecast_balance > (item.balance || 0) ? 'text-red-400' : 'text-green-400'}`}>
+                    {fmt(item.forecast_balance)}
+                  </span>
+                </div>
+              )}
+              {item.type === 'credit_card' && item.projected_this_period !== null && item.projected_this_period !== undefined && (
+                <div className="flex items-center justify-between text-[10px] text-slate-400">
                   <span>Projected spend this statement</span>
                   <span className="text-amber-400 font-semibold">{fmt(item.projected_this_period)}</span>
                 </div>

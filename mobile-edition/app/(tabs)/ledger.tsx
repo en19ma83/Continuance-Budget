@@ -171,6 +171,10 @@ function SwipeCalendar({ entries }: { entries: LedgerEntry[] }) {
           const dayEntries = entriesByDay[day] ?? [];
           const hasIncome = dayEntries.some((e) => e.amount > 0);
           const hasExpense = dayEntries.some((e) => e.amount < 0);
+          
+          // Check if ALL entries for this day are projected
+          const isFullyProjected = dayEntries.length > 0 && dayEntries.every(e => e.status === 'PROJECTED');
+          
           const selected = selectedDay === day;
           const todayCell = isToday(day);
 
@@ -192,13 +196,21 @@ function SwipeCalendar({ entries }: { entries: LedgerEntry[] }) {
                     : isDark
                     ? 'text-slate-300'
                     : 'text-slate-700'
-                }`}
+                } ${isFullyProjected && !selected ? 'opacity-50' : ''}`}
               >
                 {day}
               </Text>
               <View className="flex-row gap-0.5 mt-0.5">
-                {hasIncome && <View className={`w-1 h-1 rounded-full ${selected ? 'bg-white' : 'bg-emerald-400'}`} />}
-                {hasExpense && <View className={`w-1 h-1 rounded-full ${selected ? 'bg-white' : 'bg-rose-400'}`} />}
+                {hasIncome && (
+                  <View className={`w-1 h-1 rounded-full ${
+                    selected ? 'bg-white' : 'bg-emerald-400'
+                  } ${isFullyProjected && !selected ? 'bg-transparent border border-emerald-400 w-[5px] h-[5px]' : ''}`} />
+                )}
+                {hasExpense && (
+                  <View className={`w-1 h-1 rounded-full ${
+                    selected ? 'bg-white' : 'bg-rose-400'
+                  } ${isFullyProjected && !selected ? 'bg-transparent border border-rose-400 w-[5px] h-[5px]' : ''}`} />
+                )}
               </View>
             </TouchableOpacity>
           );
@@ -229,11 +241,17 @@ function SwipeCalendar({ entries }: { entries: LedgerEntry[] }) {
 export default function LedgerScreen() {
   const isDark = useColorScheme() === 'dark';
   const [viewMode, setViewMode] = useState<ViewMode>('timeline');
+  const [statusFilter, setStatusFilter] = useState<'ALL' | 'ACTUAL' | 'PROJECTED'>('ALL');
 
-  const { data: entries = [], refetch, isFetching } = useQuery({
+  const { data: rawEntries = [], refetch, isFetching } = useQuery({
     queryKey: ['ledger'],
     queryFn: () => ledgerApi.list(),
   });
+
+  const entries = useMemo(() => {
+    if (statusFilter === 'ALL') return rawEntries;
+    return rawEntries.filter(e => e.status === statusFilter);
+  }, [rawEntries, statusFilter]);
 
   const renderItem = useCallback(
     ({ item }: { item: LedgerEntry }) => (
@@ -266,6 +284,27 @@ export default function LedgerScreen() {
             </TouchableOpacity>
           ))}
         </View>
+
+      {/* Filter Bar */}
+      <View className="px-5 pb-3">
+        <View className={`flex-row rounded-xl p-1 ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}>
+          {(['ALL', 'ACTUAL', 'PROJECTED'] as const).map((f) => (
+            <TouchableOpacity
+              key={f}
+              onPress={() => setStatusFilter(f)}
+              className={`flex-1 py-2 rounded-lg items-center ${statusFilter === f ? (isDark ? 'bg-slate-700' : 'bg-white shadow-sm') : ''}`}
+            >
+              <Text className={`text-xs font-semibold ${
+                statusFilter === f 
+                  ? (isDark ? 'text-sky-400' : 'text-sky-600') 
+                  : (isDark ? 'text-slate-500' : 'text-slate-500')
+              }`}>
+                {f === 'ALL' ? 'Everything' : f.charAt(0) + f.slice(1).toLowerCase()}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
       </View>
 
       {viewMode === 'timeline' ? (
