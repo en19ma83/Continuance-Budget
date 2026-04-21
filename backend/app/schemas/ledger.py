@@ -51,6 +51,8 @@ class LedgerEntryOut(LedgerEntryBase):
     gst_treatment: Optional[GstTreatment] = None
     account_name: Optional[str] = None   # e.g. "ANZ Visa"
     account_type: Optional[str] = None   # e.g. "Credit Card" | "Checking" | "Savings"
+    category_group_name: Optional[str] = None
+    category_group_type: Optional[str] = None # INCOME, EXPENSE, TRANSFER
 
     class Config:
         from_attributes = True

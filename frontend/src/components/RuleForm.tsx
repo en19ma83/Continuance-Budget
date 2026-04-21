@@ -117,7 +117,8 @@ export function RuleForm({ onComplete, token }: { onComplete?: () => void, token
         setFrequencyType('MONTHLY_DATE');
         setIsTaxEvent(false);
         setGstTreatment('N_A');
-        setAnchorDate(new Date().toISOString().split('T')[0]);
+        const todayStr = new Date().toLocaleDateString('en-CA'); // Robust YYYY-MM-DD
+        setAnchorDate(todayStr);
         if (onComplete) onComplete();
       } else {
         console.error('Failed to create rule');
@@ -227,6 +228,14 @@ export function RuleForm({ onComplete, token }: { onComplete?: () => void, token
                       <option key={acc.id} value={acc.id}>{acc.name} ({acc.type})</option>
                     ))}
                 </select>
+                {fundingAccountId && (
+                  <div className="flex items-center gap-2 px-2 py-1 mt-2 rounded bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-bold text-emerald-500 uppercase tracking-widest animate-in fade-in slide-in-from-top-1">
+                    <LucideArrowRight className="w-3 h-3" />
+                    {accounts.find(a => a.id === fundingAccountId)?.name} 
+                    <span className="text-slate-400 mx-1">→</span> 
+                    {accounts.find(a => a.id === accountId)?.name}
+                  </div>
+                )}
               </div>
             </div>
           ) : (
@@ -244,13 +253,21 @@ export function RuleForm({ onComplete, token }: { onComplete?: () => void, token
             <label htmlFor="is_transfer" className="text-sm font-semibold">Is Transfer?</label>
           </div>
           {isTransfer && (
-            <div className="flex-1 animate-in fade-in slide-in-from-left-2">
+            <div className="flex-1 animate-in fade-in slide-in-from-left-2 space-y-2">
               <select value={targetAccountId} onChange={e => setTargetAccountId(e.target.value)} className="w-full bg-white dark:bg-black/20 border border-gray-200 dark:border-white/10 rounded-lg px-3 py-1.5 text-xs outline-none focus:ring-1 focus:ring-blue-500 text-gray-900 dark:text-gray-100">
                 <option value="">Target Account...</option>
                 {accounts.filter(a => a.id !== accountId).map(acc => (
                     <option key={acc.id} value={acc.id}>Transfer to: {acc.name}</option>
                 ))}
               </select>
+              {targetAccountId && (
+                <div className="flex items-center gap-2 px-2 py-1 rounded bg-blue-500/10 border border-blue-500/20 text-[10px] font-bold text-blue-500 uppercase tracking-widest">
+                  <LucideArrowRight className="w-3 h-3" />
+                  {accounts.find(a => a.id === accountId)?.name} 
+                  <span className="text-slate-400 mx-1">→</span> 
+                  {accounts.find(a => a.id === targetAccountId)?.name}
+                </div>
+              )}
             </div>
           )}
         </div>

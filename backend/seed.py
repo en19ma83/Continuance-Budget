@@ -104,6 +104,8 @@ def seed():
     # Fix Postgres ENUM issue with TRANSFER since Alembic autogenerate doesn't do it natively
     try:
         db.execute(text("ALTER TYPE categorytype ADD VALUE IF NOT EXISTS 'TRANSFER'"))
+        db.execute(text("ALTER TYPE frequencytype ADD VALUE IF NOT EXISTS 'QUARTERLY'"))
+        db.execute(text("ALTER TYPE frequencytype ADD VALUE IF NOT EXISTS 'BI_ANNUAL'"))
         db.commit()
     except Exception:
         db.rollback()

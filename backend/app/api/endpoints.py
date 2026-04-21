@@ -82,8 +82,18 @@ def get_ledger(
     ).label("cc_balance")
 
     query = (
-        db.query(LedgerEntry, Account.entity, balance_calc, liquid_balance_calc, cc_balance_calc)
+        db.query(
+            LedgerEntry, 
+            Account.entity, 
+            balance_calc, 
+            liquid_balance_calc, 
+            cc_balance_calc,
+            CategoryGroup.name.label("cg_name"),
+            CategoryGroup.type.label("cg_type")
+        )
         .join(Account, LedgerEntry.account_id == Account.id)
+        .outerjoin(Category, LedgerEntry.category_id == Category.id)
+        .outerjoin(CategoryGroup, Category.group_id == CategoryGroup.id)
         .filter(LedgerEntry.user_id == current_user.id, LedgerEntry.account_id.in_(ledger_account_ids))
         .order_by(LedgerEntry.date, LedgerEntry.id)
         .all()
@@ -93,11 +103,14 @@ def get_ledger(
     accounts_map = {str(a.id): a for a in all_active_accounts}
 
     results = []
-    for entry, ent, bal, liq_bal, cc_bal in query:
+    for entry, ent, bal, liq_bal, cc_bal, cg_name, cg_type in query:
         entry.running_balance = bal
         entry.liquid_balance = liq_bal
         entry.cc_balance = cc_bal
         entry.entity = ent
+        entry.category_group_name = cg_name
+        entry.category_group_type = str(cg_type) if cg_type else None
+
         if entry.category_id and str(entry.category_id) in categories:
             entry.category_color = categories[str(entry.category_id)].color
             entry.category_name = categories[str(entry.category_id)].name

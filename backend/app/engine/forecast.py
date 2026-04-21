@@ -61,9 +61,18 @@ def generate_forecast(rule: RecurringRule, months_ahead: int = 12) -> list[Ledge
 
         # Mirror Entry for Transfers
         if rule.transfer_to_account_id:
+            # Try to get account names for better labeling
+            source_abbr = rule.account.name if rule.account else "?"
+            dest_abbr = rule.transfer_to_account.name if rule.transfer_to_account else "?"
+            
+            # Original entry gets "To [Dest]" context if name is generic
+            if entry.name == "Transfer":
+                entry.name = f"Transfer to {dest_abbr}"
+            
             mirror = LedgerEntry(
                 id=uuid.uuid4(),
                 date=d.date(),
+                name=f"Transfer from {source_abbr}" if entry.name.startswith("Transfer") else f"Mirror: {entry.name}",
                 amount=-rule.amount,
                 status=LedgerStatus.PROJECTED,
                 rule_id=rule.id,

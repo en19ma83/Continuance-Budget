@@ -25,7 +25,13 @@ export function AnalysisCharts({
 
         const filtered = entries.filter(e => {
             const d = parseISO(e.date);
-            return isSameMonth(d, start) && e.category_name !== 'Transfer';
+            // EXCLUDE:
+            // 1. Transactions categorized in the 'TRANSFER' group
+            // 2. Positive integers on Credit Card accounts (these are debt repayments, not income)
+            const isTransferGroup = e.category_group_type === 'TRANSFER' || e.category_name === 'Transfer';
+            const isCCRepayment = e.account_type === 'Credit Card' && e.amount > 0;
+
+            return isSameMonth(d, start) && !isTransferGroup && !isCCRepayment;
         });
 
         let income = 0;
