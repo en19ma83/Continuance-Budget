@@ -33,7 +33,10 @@ export function AnalysisCharts({
             const isTransferGroup = e.category_group_type === 'TRANSFER' || e.category_name === 'Transfer';
             const isCCRepayment = e.account_type === 'Credit Card' && e.amount > 0;
 
-            return isSameMonth(d, start) && !isTransferGroup && !isCCRepayment;
+            // We only want genuine INCOME or EXPENSE groups for the high-level chart
+            const isGenuine = e.category_group_type === 'INCOME' || e.category_group_type === 'EXPENSE';
+
+            return isSameMonth(d, start) && !isTransferGroup && !isCCRepayment && isGenuine;
         });
 
         let income = 0;
@@ -41,9 +44,9 @@ export function AnalysisCharts({
         const categoryMap: Record<string, { name: string; value: number; color: string }> = {};
 
         filtered.forEach(e => {
-            if (e.amount > 0) {
+            if (e.category_group_type === 'INCOME') {
                 income += e.amount;
-            } else {
+            } else if (e.category_group_type === 'EXPENSE') {
                 const absAmt = Math.abs(e.amount);
                 expenses += absAmt;
                 const catName: string = e.category_name || 'Uncategorized';

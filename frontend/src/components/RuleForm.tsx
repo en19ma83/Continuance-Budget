@@ -78,7 +78,12 @@ export function RuleForm({ onComplete, token }: { onComplete?: () => void, token
         transferTarget = null;
       }
     } else {
-      finalAmount = isExpense ? -Math.abs(parseFloat(amount)) : parseFloat(amount);
+      // Normal transfers/expenses: ensure transfers are always negative (outflow from source)
+      if (isTransfer) {
+        finalAmount = -Math.abs(parseFloat(amount));
+      } else {
+        finalAmount = isExpense ? -Math.abs(parseFloat(amount)) : parseFloat(amount);
+      }
       transferTarget = isTransfer ? targetAccountId : null;
     }
 
