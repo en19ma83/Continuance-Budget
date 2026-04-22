@@ -33,10 +33,13 @@ export function AnalysisCharts({
             const isTransferGroup = e.category_group_type === 'TRANSFER' || e.category_name === 'Transfer';
             const isCCRepayment = e.account_type === 'Credit Card' && e.amount > 0;
 
-            // We only want genuine INCOME or EXPENSE groups for the high-level chart
-            const isGenuine = e.category_group_type === 'INCOME' || e.category_group_type === 'EXPENSE';
+            // We want to show the chart if there is any genuine income or expense
+            // 1. Genuine income (strict per user request)
+            const isGenuineIncome = e.category_group_type === 'INCOME';
+            // 2. Genuine spend (anything negative that isn't a transfer)
+            const isGenuineSpend = e.amount < 0 && !isTransferGroup;
 
-            return isSameMonth(d, start) && !isTransferGroup && !isCCRepayment && isGenuine;
+            return isSameMonth(d, start) && (isGenuineIncome || isGenuineSpend) && !isCCRepayment;
         });
 
         let income = 0;

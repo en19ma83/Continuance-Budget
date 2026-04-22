@@ -267,6 +267,27 @@ def match_transaction(
             )
             db.add(history)
 
+    if ghost.rule_id:
+        from app.models import RecurringRule
+        rule = db.query(RecurringRule).filter(RecurringRule.id == ghost.rule_id).first()
+        if rule and rule.transfer_to_account_id:
+            # Match the partner entry (the other side of the transfer)
+            partner = (
+                db.query(LedgerEntry)
+                .filter(
+                    LedgerEntry.rule_id == ghost.rule_id,
+                    LedgerEntry.date == ghost.date,
+                    LedgerEntry.id != ghost.id,
+                    LedgerEntry.user_id == current_user.id
+                )
+                .first()
+            )
+            if partner:
+                partner.status = LedgerStatus.ACTUAL
+                partner.date = match_data.actual_date
+                # If partner amount is perfectly opposite rule amount, flip it; else preserve its existing sign
+                partner.amount = -match_data.actual_amount
+
     db.commit()
     db.refresh(ghost)
     return ghost

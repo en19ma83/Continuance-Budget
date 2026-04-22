@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { ArrowRight, Trash2, Edit3, Check, X, CreditCard } from 'lucide-react';
 import { format, isBefore, isAfter, startOfDay } from 'date-fns';
 import { API_BASE } from '../utils/api';
@@ -62,6 +62,18 @@ export function TimelineView({
     const [dialog, setDialog] = useState<DialogState>(null);
     const [editState, setEditState] = useState<EditState>(null);
     const [saving, setSaving] = useState(false);
+
+    // Identify transfer pairs (entries sharing rule_id and date)
+    const transferRuleCounts = useMemo(() => {
+        const counts: Record<string, number> = {};
+        entries.forEach(e => {
+            if (e.rule_id) {
+                const key = `${e.rule_id}-${e.date}`;
+                counts[key] = (counts[key] || 0) + 1;
+            }
+        });
+        return counts;
+    }, [entries]);
 
     const authHeaders = (extra: Record<string, string> = {}) => ({
         ...extra,
@@ -202,6 +214,11 @@ export function TimelineView({
                                             className="absolute left-0 top-0 bottom-0 w-1 opacity-60"
                                             style={{ backgroundColor: entry.category_color }}
                                         />
+                                    )}
+
+                                    {/* Transfer Partner Marker */}
+                                    {entry.rule_id && transferRuleCounts[`${entry.rule_id}-${entry.date}`] > 1 && (
+                                        <div className="absolute right-0 top-0 bottom-0 w-1 bg-green-500/40 shadow-[0_0_8px_rgba(34,197,94,0.4)]" />
                                     )}
 
                                     {isEditing ? (
