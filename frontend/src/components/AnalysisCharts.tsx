@@ -49,7 +49,8 @@ export function AnalysisCharts({
         filtered.forEach(e => {
             if (e.category_group_type === 'INCOME') {
                 income += e.amount;
-            } else if (e.category_group_type === 'EXPENSE') {
+            } else {
+                // If it passed the filter and isn't income group, it represents spend (including uncategorized)
                 const absAmt = Math.abs(e.amount);
                 expenses += absAmt;
                 const catName: string = e.category_name || 'Uncategorized';
