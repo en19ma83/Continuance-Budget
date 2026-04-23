@@ -10,6 +10,7 @@ type LedgerEntry = {
     category_color?: string;
     account_type?: string;
     category_group_type?: string;
+    rule_id?: string;
 };
 
 export function AnalysisCharts({
@@ -22,6 +23,18 @@ export function AnalysisCharts({
     const [monthOffset, setMonthOffset] = useState(0);
     const targetMonth = useMemo(() => startOfMonth(addMonths(new Date(), monthOffset)), [monthOffset]);
 
+    // Heuristic: identify transfer pairs (entries sharing rule_id and date)
+    const transferRuleCounts = useMemo(() => {
+        const counts: Record<string, number> = {};
+        entries.forEach(e => {
+            if (e.rule_id) {
+                const key = `${e.rule_id}-${e.date}`;
+                counts[key] = (counts[key] || 0) + 1;
+            }
+        });
+        return counts;
+    }, [entries]);
+
     const monthData = useMemo(() => {
         const start = targetMonth;
 
@@ -30,8 +43,10 @@ export function AnalysisCharts({
             // EXCLUDE:
             // 1. Transactions categorized in the 'TRANSFER' group
             // 2. Positive integers on Credit Card accounts (these are debt repayments, not income)
+            // 3. Transactions that are part of a transfer pair (identified by rule_id + date)
             const cgType = e.category_group_type?.toUpperCase();
-            const isTransferGroup = cgType === 'TRANSFER' || e.category_name === 'Transfer';
+            const isTransferPair = e.rule_id && transferRuleCounts[`${e.rule_id}-${e.date}`] > 1;
+            const isTransferGroup = cgType === 'TRANSFER' || e.category_name === 'Transfer' || !!isTransferPair;
             const isCCRepayment = e.account_type === 'Credit Card' && e.amount > 0;
 
             // 1. Genuine income (strict per user request)
