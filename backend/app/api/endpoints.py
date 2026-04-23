@@ -109,7 +109,7 @@ def get_ledger(
         entry.cc_balance = cc_bal
         entry.entity = ent
         entry.category_group_name = cg_name
-        entry.category_group_type = str(cg_type) if cg_type else None
+        entry.category_group_type = cg_type.value if cg_type else None
 
         if entry.category_id and str(entry.category_id) in categories:
             entry.category_color = categories[str(entry.category_id)].color

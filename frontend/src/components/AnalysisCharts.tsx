@@ -30,12 +30,12 @@ export function AnalysisCharts({
             // EXCLUDE:
             // 1. Transactions categorized in the 'TRANSFER' group
             // 2. Positive integers on Credit Card accounts (these are debt repayments, not income)
-            const isTransferGroup = e.category_group_type === 'TRANSFER' || e.category_name === 'Transfer';
+            const cgType = e.category_group_type?.toUpperCase();
+            const isTransferGroup = cgType === 'TRANSFER' || e.category_name === 'Transfer';
             const isCCRepayment = e.account_type === 'Credit Card' && e.amount > 0;
 
-            // We want to show the chart if there is any genuine income or expense
             // 1. Genuine income (strict per user request)
-            const isGenuineIncome = e.category_group_type === 'INCOME';
+            const isGenuineIncome = cgType === 'INCOME';
             // 2. Genuine spend (anything negative that isn't a transfer)
             const isGenuineSpend = e.amount < 0 && !isTransferGroup;
 
@@ -47,7 +47,7 @@ export function AnalysisCharts({
         const categoryMap: Record<string, { name: string; value: number; color: string }> = {};
 
         filtered.forEach(e => {
-            if (e.category_group_type === 'INCOME') {
+            if (e.category_group_type?.toUpperCase() === 'INCOME') {
                 income += e.amount;
             } else {
                 // If it passed the filter and isn't income group, it represents spend (including uncategorized)
