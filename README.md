@@ -202,5 +202,3 @@ An AI-first managed version with:
 - **Multi-seat plans** — Personal, Family, and Business tiers with Stripe billing
 
 ---
-
-*Built with [Claude Code](https://claude.ai/code) by Anthropic.*
