@@ -46,7 +46,14 @@ export function AnalysisCharts({
             // 3. Transactions that are part of a transfer pair (identified by rule_id + date)
             const cgType = e.category_group_type?.toUpperCase();
             const isTransferPair = e.rule_id && transferRuleCounts[`${e.rule_id}-${e.date}`] > 1;
-            const isTransferGroup = cgType === 'TRANSFER' || e.category_name === 'Transfer' || !!isTransferPair;
+            
+            // Exclude anything explicitly in TRANSFER group, OR with "transfer" or "payment" in the name, OR part of a rule-based pair
+            const isTransferGroup = 
+                cgType === 'TRANSFER' || 
+                e.category_name?.toLowerCase().includes('transfer') || 
+                e.category_name?.toLowerCase().includes('payment') ||
+                !!isTransferPair;
+
             const isCCRepayment = e.account_type === 'Credit Card' && e.amount > 0;
 
             // 1. Genuine income (strict per user request)
