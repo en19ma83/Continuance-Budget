@@ -56,9 +56,10 @@ export function AnalysisCharts({
 
             const isCCRepayment = e.account_type === 'Credit Card' && e.amount > 0;
 
-            // 1. Genuine income (strict per user request)
-            const isGenuineIncome = cgType === 'INCOME';
-            // 2. Genuine spend (anything negative that isn't a transfer)
+            // 1. Genuine income: Either explicitly categorized as INCOME, or any positive amount that isn't a transfer/repayment
+            const isGenuineIncome = cgType === 'INCOME' || (e.amount > 0 && !isTransferGroup && !isCCRepayment);
+            
+            // 2. Genuine spend: Anything negative that isn't a transfer
             const isGenuineSpend = e.amount < 0 && !isTransferGroup;
 
             return isSameMonth(d, start) && (isGenuineIncome || isGenuineSpend) && !isCCRepayment;

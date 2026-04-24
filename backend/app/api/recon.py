@@ -66,6 +66,7 @@ async def import_statement(
 
     imported_count = 0
     duplicate_count = 0
+    seen_hashes = set()
 
     for _, row in df.iterrows():
         try:
@@ -94,9 +95,15 @@ async def import_statement(
             raw_string = f"{parsed_date}{amount}{description}{entity}{current_user.id}"
             import_hash = hashlib.md5(raw_string.encode()).hexdigest()
 
+            if import_hash in seen_hashes:
+                duplicate_count += 1
+                continue
+
             if db.query(StatementTransaction).filter(StatementTransaction.import_hash == import_hash).first():
                 duplicate_count += 1
                 continue
+
+            seen_hashes.add(import_hash)
 
             db.add(StatementTransaction(
                 date=parsed_date,
