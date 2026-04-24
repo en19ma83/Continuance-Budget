@@ -29,15 +29,16 @@ function App() {
     setToken(null);
   };
   
-  const [viewMode, setViewMode] = useState<'timeline' | 'calendar'>('timeline');
+  const [viewMode, setViewMode] = useState<'timeline' | 'calendar'>(() => (localStorage.getItem('view_mode') as any) || 'timeline');
   const [ledgerEntries, setLedgerEntries] = useState<any[]>([]);
-  const [leftTab, setLeftTab] = useState<'rules' | 'reconcile' | 'setup'>('setup');
+  const [leftTab, setLeftTab] = useState<'rules' | 'reconcile' | 'setup'>(() => (localStorage.getItem('left_tab') as any) || 'setup');
   const [stats, setStats] = useState<any>({ on_budget: 0, off_budget: 0, total: 0, cc_owing: 0, cc_limit: 0, assets_total: 0, liabilities_total: 0, equity_total: 0, net_worth: 0, base_currency: 'AUD' });
   const [categoryGroups, setCategoryGroups] = useState<any[]>([]);
-  const [baseCurrency, setBaseCurrency] = useState('AUD');
+  const [baseCurrency, setBaseCurrency] = useState(() => localStorage.getItem('base_currency') || 'AUD');
   const [isLoading, setIsLoading] = useState(true);
   const [accounts, setAccounts] = useState<any[]>([]);
   const [filterAccountId, setFilterAccountId] = useState<string>('');
+  const [reconRefreshKey, setReconRefreshKey] = useState(0);
   const CURRENCIES = ['AUD', 'USD', 'EUR', 'GBP', 'NZD', 'CAD', 'SGD'];
 
   const fetchStats = () => {
@@ -133,7 +134,10 @@ function App() {
               <LucideGlobe className="w-3 h-3 text-slate-400" />
               <select
                 value={baseCurrency}
-                onChange={e => setBaseCurrency(e.target.value)}
+                onChange={e => {
+                  setBaseCurrency(e.target.value);
+                  localStorage.setItem('base_currency', e.target.value);
+                }}
                 className="bg-transparent text-sm font-semibold outline-none cursor-pointer pr-1"
                 title="Base Display Currency"
               >
@@ -299,19 +303,19 @@ function App() {
             <div className="glass rounded-2xl p-6">
               <div className="flex rounded-lg overflow-hidden border border-gray-200 dark:border-white/10 mb-6 p-1 bg-gray-100 dark:bg-black/20">
                 <button
-                  onClick={() => setLeftTab('rules')}
+                  onClick={() => { setLeftTab('rules'); localStorage.setItem('left_tab', 'rules'); }}
                   className={`flex-1 py-2 text-xs font-bold uppercase tracking-wider transition-all rounded-md ${leftTab === 'rules' ? 'bg-white dark:bg-white/10 text-gray-900 dark:text-white shadow-sm' : 'text-slate-500 hover:text-gray-700 dark:hover:text-slate-300'}`}
                 >
                   Rules
                 </button>
                 <button
-                  onClick={() => setLeftTab('reconcile')}
+                  onClick={() => { setLeftTab('reconcile'); localStorage.setItem('left_tab', 'reconcile'); }}
                   className={`flex-1 py-2 text-xs font-bold uppercase tracking-wider transition-all rounded-md ${leftTab === 'reconcile' ? 'bg-white dark:bg-white/10 text-gray-900 dark:text-white shadow-sm' : 'text-slate-500 hover:text-gray-700 dark:hover:text-slate-300'}`}
                 >
                   Reconcile
                 </button>
                 <button
-                  onClick={() => setLeftTab('setup')}
+                  onClick={() => { setLeftTab('setup'); localStorage.setItem('left_tab', 'setup'); }}
                   className={`flex-1 py-2 text-xs font-bold uppercase tracking-wider transition-all rounded-md ${leftTab === 'setup' ? 'bg-white dark:bg-white/10 text-gray-900 dark:text-white shadow-sm' : 'text-slate-500 hover:text-gray-700 dark:hover:text-slate-300'}`}
                 >
                   Setup
@@ -329,8 +333,14 @@ function App() {
                   <h2 className="text-xl font-semibold mb-2">Statement Sync</h2>
                   <p className="text-xs text-slate-500 mb-6">Import statements and match to ghosts.</p>
                   <div className="space-y-8">
-                    <ImportWizard onComplete={() => fetchLedger()} token={token} />
-                    <ReconciliationCenter ghostEntries={ledgerEntries} onRefresh={fetchLedger} baseCurrency={baseCurrency} token={token} />
+                    <ImportWizard onComplete={() => { fetchLedger(); setReconRefreshKey(k => k + 1); }} token={token} />
+                    <ReconciliationCenter 
+                      ghostEntries={ledgerEntries} 
+                      onRefresh={fetchLedger} 
+                      baseCurrency={baseCurrency} 
+                      token={token} 
+                      refreshKey={reconRefreshKey}
+                    />
                   </div>
                 </>
               ) : (
@@ -346,13 +356,13 @@ function App() {
                 <h2 className="text-xl font-semibold">Perpetual Ledger</h2>
                 <div className="glass ml-4 flex rounded-full overflow-hidden p-1">
                   <button
-                    onClick={() => setViewMode('timeline')}
+                    onClick={() => { setViewMode('timeline'); localStorage.setItem('view_mode', 'timeline'); }}
                     className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition-colors ${viewMode === 'timeline' ? 'bg-white dark:bg-white/10 text-gray-900 dark:text-white shadow' : 'text-slate-500 hover:text-gray-700 dark:hover:text-slate-300'}`}
                   >
                     Timeline
                   </button>
                   <button
-                    onClick={() => setViewMode('calendar')}
+                    onClick={() => { setViewMode('calendar'); localStorage.setItem('view_mode', 'calendar'); }}
                     className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition-colors ${viewMode === 'calendar' ? 'bg-white dark:bg-white/10 text-gray-900 dark:text-white shadow' : 'text-slate-500 hover:text-gray-700 dark:hover:text-slate-300'}`}
                   >
                     Calendar

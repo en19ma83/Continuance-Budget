@@ -10,7 +10,20 @@ interface EntityContextType {
 const EntityContext = createContext<EntityContextType | undefined>(undefined);
 
 export function EntityProvider({ children }: { children: ReactNode }) {
-  const [activeEntities, setActiveEntities] = useState<Set<EntityType>>(new Set(['PERSONAL']));
+  const [activeEntities, setActiveEntities] = useState<Set<EntityType>>(() => {
+    const saved = localStorage.getItem('active_entities');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return new Set(parsed as EntityType[]);
+        }
+      } catch (e) {
+        console.error('Failed to parse active_entities', e);
+      }
+    }
+    return new Set(['PERSONAL']);
+  });
 
   const toggleEntity = (entity: EntityType) => {
     setActiveEntities(prev => {
@@ -20,6 +33,7 @@ export function EntityProvider({ children }: { children: ReactNode }) {
       } else {
         newSet.add(entity);
       }
+      localStorage.setItem('active_entities', JSON.stringify(Array.from(newSet)));
       return newSet;
     });
   };

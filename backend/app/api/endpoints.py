@@ -229,6 +229,14 @@ def delete_transaction(
     )
     if not tx:
         raise HTTPException(status_code=404, detail="Transaction not found")
+    
+    # Handle linked statement transactions: unreconcile them so they appear back in the staging area
+    from app.models import StatementTransaction
+    stmt_txs = db.query(StatementTransaction).filter(StatementTransaction.ledger_entry_id == tx_id).all()
+    for s in stmt_txs:
+        s.is_reconciled = False
+        s.ledger_entry_id = None
+
     db.delete(tx)
     db.commit()
     return {"status": "deleted"}

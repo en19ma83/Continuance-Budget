@@ -96,6 +96,7 @@ class StatementTransactionOut(BaseModel):
     amount: float
     description: str
     entity: EntityType
+    account_id: UUID
     is_reconciled: bool
     import_hash: str
 

@@ -193,3 +193,21 @@ def create_from_statement(
 
     db.commit()
     return {"status": "success", "ledger_id": ledger_entry.id}
+
+
+@router.delete("/{statement_id}")
+def delete_statement_transaction(
+    statement_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    stmt_tx = db.query(StatementTransaction).filter(
+        StatementTransaction.id == statement_id,
+        StatementTransaction.user_id == current_user.id,
+    ).first()
+    if not stmt_tx:
+        raise HTTPException(status_code=404, detail="Statement item not found")
+
+    db.delete(stmt_tx)
+    db.commit()
+    return {"status": "success"}
