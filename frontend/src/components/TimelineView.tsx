@@ -21,6 +21,7 @@ type LedgerEntry = {
     rule_id?: string;
     account_name?: string;
     account_type?: string;
+    account_color?: string;
     category_group_name?: string;
     category_group_type?: string;
 };
@@ -320,8 +321,11 @@ export function TimelineView({
                                                             </span>
                                                         )}
                                                     </div>
-                                                    <div className="text-[10px] text-slate-500 uppercase tracking-widest">
-                                                        {entry.account_name ? `${entry.account_name} · ` : ''}{entry.category_name || 'Uncategorized'}
+                                                    <div className="text-[10px] text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
+                                                        {entry.account_color && (
+                                                            <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: entry.account_color }} />
+                                                        )}
+                                                        <span>{entry.account_name ? `${entry.account_name} · ` : ''}{entry.category_name || 'Uncategorized'}</span>
                                                     </div>
                                                     <div className="text-xs text-slate-500 dark:text-slate-400 capitalize flex items-center gap-2">
                                                         {entry.status.toLowerCase()}

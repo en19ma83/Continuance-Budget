@@ -118,6 +118,7 @@ def get_ledger(
         if acc:
             entry.account_name = acc.name
             entry.account_type = acc.type
+            entry.account_color = acc.color
         results.append(entry)
 
     return results

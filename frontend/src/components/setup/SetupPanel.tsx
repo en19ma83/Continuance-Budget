@@ -17,7 +17,20 @@ type Account = {
   statement_date?: number;
   statement_due_days?: number;
   is_charge_card?: boolean;
+  color?: string;
 };
+
+const ACCOUNT_COLORS = [
+  '#3b82f6', // blue
+  '#8b5cf6', // purple
+  '#ec4899', // pink
+  '#ef4444', // red
+  '#f59e0b', // amber
+  '#10b981', // emerald
+  '#06b6d4', // cyan
+  '#6366f1', // indigo
+  '#64748b', // slate
+];
 
 export function SetupPanel({ onRefresh, baseCurrency = 'AUD', token }: { onRefresh: () => void, baseCurrency?: string, token: string | null }) {
   const { activeEntities } = useEntity();
@@ -29,6 +42,7 @@ export function SetupPanel({ onRefresh, baseCurrency = 'AUD', token }: { onRefre
   const [newEntity, setNewEntity] = useState(Array.from(activeEntities)[0] || 'PERSONAL');
   const [isOnBudget, setIsOnBudget] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [newColor, setNewColor] = useState(ACCOUNT_COLORS[0]);
   // CC-specific fields
   const [creditLimit, setCreditLimit] = useState('');
   const [balanceTrackingMethod, setBalanceTrackingMethod] = useState('AMOUNT_OWING');
@@ -70,6 +84,7 @@ export function SetupPanel({ onRefresh, baseCurrency = 'AUD', token }: { onRefre
       statement_date: isCC && statementDate ? parseInt(statementDate) : null,
       statement_due_days: isCC && statementDueDays ? parseInt(statementDueDays) : null,
       is_charge_card: isCC ? isChargeCard : false,
+      color: newColor,
     };
 
 
@@ -126,6 +141,7 @@ export function SetupPanel({ onRefresh, baseCurrency = 'AUD', token }: { onRefre
     setStatementDate(acc.statement_date?.toString() ?? '');
     setStatementDueDays(acc.statement_due_days?.toString() ?? '14');
     setIsChargeCard(acc.is_charge_card ?? false);
+    setNewColor(acc.color ?? ACCOUNT_COLORS[0]);
     setShowAdd(true);
 
   };
@@ -259,6 +275,20 @@ export function SetupPanel({ onRefresh, baseCurrency = 'AUD', token }: { onRefre
               </div>
             </div>
           )}
+          <div className="space-y-2 pb-2">
+            <label className="text-[10px] text-slate-500 uppercase font-bold tracking-widest">Account Color (Ledger Marker)</label>
+            <div className="flex flex-wrap gap-2">
+              {ACCOUNT_COLORS.map(c => (
+                <button
+                  key={c}
+                  onClick={() => setNewColor(c)}
+                  className={`w-6 h-6 rounded-full border-2 transition-all ${newColor === c ? 'border-white scale-110 shadow-lg' : 'border-transparent opacity-60 hover:opacity-100'}`}
+                  style={{ backgroundColor: c }}
+                />
+              ))}
+            </div>
+          </div>
+
           <button
             onClick={handleCreate}
             className="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 rounded-lg text-sm transition-colors"
@@ -270,7 +300,10 @@ export function SetupPanel({ onRefresh, baseCurrency = 'AUD', token }: { onRefre
 
       <div className="grid grid-cols-1 gap-3">
         {accounts.map(acc => (
-          <div key={acc.id} className={`p-4 rounded-xl border flex items-center justify-between ${acc.is_on_budget ? 'glass border-white/10' : 'bg-white/5 border-dashed border-white/20'}`}>
+          <div key={acc.id} className={`p-4 rounded-xl border flex items-center justify-between relative overflow-hidden ${acc.is_on_budget ? 'glass border-white/10' : 'bg-white/5 border-dashed border-white/20'}`}>
+            {acc.color && (
+              <div className="absolute left-0 top-0 bottom-0 w-1 opacity-50" style={{ backgroundColor: acc.color }} />
+            )}
             <div className="flex items-center gap-3">
               <div className={`p-2 rounded-lg ${acc.is_on_budget ? 'bg-blue-500/20 text-blue-400' : 'bg-slate-500/20 text-slate-400'}`}>
                 <LucideWallet className="w-5 h-5" />

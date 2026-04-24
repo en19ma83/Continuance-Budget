@@ -14,6 +14,7 @@ type LedgerEntry = {
     entity: 'PERSONAL' | 'BUSINESS';
     category_color?: string;
     category_name?: string;
+    account_color?: string;
 };
 
 export function CalendarView({ entries, baseCurrency = 'AUD' }: { entries: LedgerEntry[], baseCurrency?: string }) {
@@ -118,7 +119,7 @@ export function CalendarView({ entries, baseCurrency = 'AUD' }: { entries: Ledge
                                 {dayEntries.map(e => (
                                     <div
                                         key={e.id}
-                                        className={`text-[9px] px-1.5 py-0.5 rounded flex justify-between gap-1 ${
+                                        className={`text-[9px] px-1.5 py-0.5 rounded flex justify-between gap-1 overflow-hidden ${
                                             e.status === 'PROJECTED' 
                                                 ? 'border border-dashed border-white/30 italic opacity-80' 
                                                 : ''
@@ -126,9 +127,10 @@ export function CalendarView({ entries, baseCurrency = 'AUD' }: { entries: Ledge
                                         style={{
                                             backgroundColor: e.category_color ? `${e.category_color}20` : (e.amount > 0 ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.15)'),
                                             color: e.category_color || (e.amount > 0 ? '#86efac' : '#fca5a5'),
+                                            borderLeft: e.account_color ? `2px solid ${e.account_color}` : undefined
                                         }}
                                     >
-                                        <span className="truncate max-w-[60px] font-medium">{e.name}</span>
+                                        <span className="truncate max-w-[60px] font-medium pl-0.5">{e.name}</span>
                                         <span className={`shrink-0 font-bold ${e.status === 'PROJECTED' ? 'opacity-60' : ''}`}>
                                             {Math.abs(e.amount).toLocaleString()}
                                         </span>

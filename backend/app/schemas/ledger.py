@@ -44,6 +44,7 @@ class LedgerEntryOut(LedgerEntryBase):
     running_balance: Optional[float] = None
     liquid_balance: Optional[float] = None
     cc_balance: Optional[float] = None
+    account_color: Optional[str] = None
     category_id: Optional[UUID] = None
     category_color: Optional[str] = None
     category_name: Optional[str] = None
@@ -119,6 +120,7 @@ class AccountBase(BaseModel):
     statement_date: Optional[int] = None            # Day of month 1-31
     statement_due_days: Optional[int] = 14
     is_charge_card: bool = False
+    color: Optional[str] = None
 
 class AccountCreate(AccountBase):
     pass
